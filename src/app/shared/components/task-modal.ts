@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
-import { Task, TaskPriority, TaskType, WorkflowColumn } from '../../core/models/project.model';
+import { WorkflowService } from '../../core/services/workflow.service';
+import { Task, TaskPriority, TaskType, Workflow } from '../../core/models/project.model';
 
 @Component({
   selector: 'app-task-modal',
@@ -50,9 +51,9 @@ import { Task, TaskPriority, TaskType, WorkflowColumn } from '../../core/models/
             </div>
 
             <div class="form-group half">
-              <label class="form-label">Project</label>
-              <select class="form-select" [(ngModel)]="projectId" name="projectId">
-                <option value="">No Project (General)</option>
+              <label class="form-label">Project *</label>
+              <select class="form-select" [(ngModel)]="projectId" name="projectId" required>
+                <option value="" disabled>Select Project...</option>
                 @for (p of projectService.projects(); track p.id) {
                   <option [value]="p.id">{{ p.name }}</option>
                 }
@@ -63,10 +64,14 @@ import { Task, TaskPriority, TaskType, WorkflowColumn } from '../../core/models/
           <!-- Status & Priority Row -->
           <div class="form-row">
             <div class="form-group half">
-              <label class="form-label">Status</label>
+              <label class="form-label">Status Column</label>
               <select class="form-select" [(ngModel)]="status" name="status">
-                @for (col of getAvailableStatuses(); track col.id) {
-                  <option [value]="col.id">{{ col.name }}</option>
+                @if (getAvailableStatuses().length === 0) {
+                  <option value="">No workflow status available</option>
+                } @else {
+                  @for (col of getAvailableStatuses(); track col.id) {
+                    <option [value]="col.name">{{ col.name }}</option>
+                  }
                 }
               </select>
             </div>
@@ -134,7 +139,7 @@ import { Task, TaskPriority, TaskType, WorkflowColumn } from '../../core/models/
             <button type="button" class="btn btn-secondary" (click)="close.emit()">
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary" [disabled]="!title.trim() || !projectId">
               <i class="fi fi-rr-check"></i>
               <span>{{ isEditMode ? 'Save Changes' : 'Create Issue' }}</span>
             </button>
@@ -178,14 +183,14 @@ import { Task, TaskPriority, TaskType, WorkflowColumn } from '../../core/models/
 export class TaskModalComponent implements OnInit {
   @Input() taskToEdit: Task | null = null;
   @Input() defaultProjectId: string = '';
-  @Input() defaultStatus: string = 'todo';
+  @Input() defaultStatus: string = '';
   @Output() close = new EventEmitter<void>();
 
   title = '';
   description = '';
   projectId = '';
   type: TaskType = 'task';
-  status: string = 'todo';
+  status: string = '';
   priority: TaskPriority = 'medium';
   assignee = 'Self';
   dueDate = '';
@@ -197,7 +202,8 @@ export class TaskModalComponent implements OnInit {
 
   constructor(
     private taskService: TaskService,
-    public projectService: ProjectService
+    public projectService: ProjectService,
+    public workflowService: WorkflowService
   ) {}
 
   ngOnInit() {
@@ -206,7 +212,7 @@ export class TaskModalComponent implements OnInit {
       this.description = this.taskToEdit.description || '';
       this.projectId = this.taskToEdit.project_id || '';
       this.type = this.taskToEdit.type || 'task';
-      this.status = this.taskToEdit.status || 'todo';
+      this.status = this.taskToEdit.status || '';
       this.priority = this.taskToEdit.priority || 'medium';
       this.assignee = this.taskToEdit.assignee || 'Self';
       this.dueDate = this.taskToEdit.due_date || '';
@@ -217,25 +223,30 @@ export class TaskModalComponent implements OnInit {
     }
   }
 
-  getAvailableStatuses(): WorkflowColumn[] {
-    return this.projectService.getProjectWorkflowColumns(this.projectId);
+  getAvailableStatuses(): Workflow[] {
+    return this.workflowService.getWorkflowsForProject(this.projectId);
   }
 
   async saveTask() {
-    if (!this.title.trim()) return;
+    if (!this.title.trim() || !this.projectId) return;
 
     const parsedLabels = this.labelsInput
       .split(',')
       .map(l => l.trim().toLowerCase())
       .filter(l => l.length > 0);
 
+    const available = this.getAvailableStatuses();
+    const finalStatus = this.status || (available.length > 0 ? available[0].name : '');
+    const activeWf = available.find(w => w.name === finalStatus);
+
     if (this.isEditMode && this.taskToEdit) {
       await this.taskService.updateTask(this.taskToEdit.id, {
         title: this.title,
         description: this.description,
         project_id: this.projectId,
+        workflow_id: activeWf?.id,
         type: this.type,
-        status: this.status,
+        status: finalStatus,
         priority: this.priority,
         assignee: this.assignee,
         due_date: this.dueDate,
@@ -246,8 +257,9 @@ export class TaskModalComponent implements OnInit {
         title: this.title,
         description: this.description,
         project_id: this.projectId,
+        workflow_id: activeWf?.id,
         type: this.type,
-        status: this.status,
+        status: finalStatus,
         priority: this.priority,
         assignee: this.assignee,
         due_date: this.dueDate,

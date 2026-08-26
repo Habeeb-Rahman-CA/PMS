@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
-import { Project, Task, WorkflowColumn } from '../../core/models/project.model';
+import { WorkflowService } from '../../core/services/workflow.service';
+import { Project, Task, Workflow } from '../../core/models/project.model';
 import { TaskModalComponent } from '../../shared/components/task-modal';
 import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
 import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
@@ -25,11 +26,17 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
           </div>
 
           <div class="header-actions">
-            <button class="btn btn-secondary" (click)="openWorkflowModal()">
-              <i class="fi fi-rr-settings-sliders"></i> Configure Workflow
-            </button>
+            @if (selectedProjectId() !== 'all') {
+              <button class="btn btn-secondary" (click)="openWorkflowModal()">
+                <i class="fi fi-rr-settings-sliders"></i> Configure Workflow
+              </button>
+            }
 
-            <button class="btn btn-primary" (click)="openCreateModal()">
+            <button
+              class="btn btn-primary"
+              [disabled]="activeColumns().length === 0"
+              (click)="openCreateModal()"
+            >
               <i class="fi fi-rr-plus"></i> Create Issue
             </button>
           </div>
@@ -44,7 +51,7 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
               [ngModel]="selectedProjectId()"
               (ngModelChange)="selectedProjectId.set($event)"
             >
-              <option value="all">All Projects</option>
+              <option value="all" disabled>Select a Project...</option>
               @for (p of projectService.projects(); track p.id) {
                 <option [value]="p.id">{{ p.name }}</option>
               }
@@ -92,70 +99,87 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
       </div>
 
       <!-- Kanban Workflow Board -->
-      <div class="kanban-board">
-        @for (col of activeColumns(); track col.id) {
-          <div class="kanban-column glass-panel">
-            <div class="column-header">
-              <div class="column-title">
-                <span class="col-dot" [style.background-color]="col.color || '#06b6d4'"></span>
-                <h3>{{ col.name }}</h3>
-                <span class="col-count">{{ getColumnTasks(col.id).length }}</span>
+      @if (selectedProjectId() === 'all') {
+        <div class="empty-board glass-panel">
+          <i class="fi fi-rr-folder empty-board-icon"></i>
+          <h3>Please select a project</h3>
+          <p>Select a project from the dropdown above to view and configure its status workflow.</p>
+        </div>
+      } @else if (activeColumns().length === 0) {
+        <div class="empty-board glass-panel">
+          <i class="fi fi-rr-settings-sliders empty-board-icon"></i>
+          <h3>No Status Workflow Configured</h3>
+          <p>You haven't created any status columns for this project yet.</p>
+          <button class="btn btn-primary" (click)="openWorkflowModal()">
+            <i class="fi fi-rr-plus"></i> Configure Workflow Columns
+          </button>
+        </div>
+      } @else {
+        <div class="kanban-board">
+          @for (col of activeColumns(); track col.id) {
+            <div class="kanban-column glass-panel">
+              <div class="column-header">
+                <div class="column-title">
+                  <span class="col-dot" [style.background-color]="col.color || '#06b6d4'"></span>
+                  <h3>{{ col.name }}</h3>
+                  <span class="col-count">{{ getColumnTasks(col.name).length }}</span>
+                </div>
+                <button
+                  class="btn btn-ghost btn-sm btn-icon"
+                  (click)="openCreateModal(col.name)"
+                  title="Add Issue to {{ col.name }}"
+                >
+                  <i class="fi fi-rr-plus"></i>
+                </button>
               </div>
-              <button
-                class="btn btn-ghost btn-sm btn-icon"
-                (click)="openCreateModal(col.id)"
-                title="Add Issue to {{ col.name }}"
-              >
-                <i class="fi fi-rr-plus"></i>
-              </button>
-            </div>
 
-            <div class="column-cards">
-              @if (getColumnTasks(col.id).length === 0) {
-                <div class="empty-column">No issues in {{ col.name }}</div>
-              } @else {
-                @for (t of getColumnTasks(col.id); track t.id) {
-                  <div
-                    class="task-card glass-panel"
-                    (click)="openDetailModal(t)"
-                  >
-                    <div class="card-top">
-                      <span class="badge" [class]="'badge-' + t.type">
-                        <i [class]="getTypeIcon(t.type)"></i> {{ t.type }}
-                      </span>
-                      <span class="badge" [class]="'badge-' + t.priority">
-                        {{ t.priority }}
-                      </span>
-                    </div>
+              <div class="column-cards">
+                @if (getColumnTasks(col.name).length === 0) {
+                  <div class="empty-column">No issues in {{ col.name }}</div>
+                } @else {
+                  @for (t of getColumnTasks(col.name); track t.id) {
+                    <div
+                      class="task-card glass-panel"
+                      (click)="openDetailModal(t)"
+                    >
+                      <div class="card-top">
+                        <span class="badge" [class]="'badge-' + t.type">
+                          <i [class]="getTypeIcon(t.type)"></i> {{ t.type }}
+                        </span>
+                        <span class="badge" [class]="'badge-' + t.priority">
+                          {{ t.priority }}
+                        </span>
+                      </div>
 
-                    <h4 class="card-title">{{ t.title }}</h4>
+                      <h4 class="card-title">{{ t.title }}</h4>
 
-                    @if (t.labels && t.labels.length > 0) {
-                      <div class="card-labels">
-                        @for (lbl of t.labels; track lbl) {
-                          <span class="label-chip">#{{ lbl }}</span>
+                      @if (t.labels && t.labels.length > 0) {
+                        <div class="card-labels">
+                          @for (lbl of t.labels; track lbl) {
+                            <span class="label-chip">#{{ lbl }}</span>
+                          }
+                        </div>
+                      }
+
+                      <div class="card-bottom">
+                        <span class="assignee">
+                          <i class="fi fi-rr-user"></i> {{ t.assignee || 'Self' }}
+                        </span>
+
+                        @if (t.due_date) {
+                          <span class="due-date">
+                            <i class="fi fi-rr-calendar"></i> {{ t.due_date }}
+                          </span>
                         }
                       </div>
-                    }
-
-                    <div class="card-bottom">
-                      <span class="assignee">
-                        <i class="fi fi-rr-user"></i> {{ t.assignee || 'Self' }}
-                      </span>
-
-                      @if (t.due_date) {
-                        <span class="due-date">
-                          <i class="fi fi-rr-calendar"></i> {{ t.due_date }}
-                        </span>
-                      }
                     </div>
-                  </div>
+                  }
                 }
-              }
+              </div>
             </div>
-          </div>
-        }
-      </div>
+          }
+        </div>
+      }
 
       <!-- Quick Create Modal -->
       @if (showCreateModal()) {
@@ -258,6 +282,28 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
       padding-left: 2.2rem;
       width: 220px;
       font-size: 0.825rem;
+    }
+    .empty-board {
+      padding: 4rem 2rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+    }
+    .empty-board-icon {
+      font-size: 2.5rem;
+      color: var(--accent-cyan);
+    }
+    .empty-board h3 {
+      font-size: 1.25rem;
+      color: var(--text-main);
+    }
+    .empty-board p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      max-width: 450px;
     }
     .kanban-board {
       display: grid;
@@ -372,17 +418,24 @@ export class TasksComponent {
 
   showCreateModal = signal<boolean>(false);
   showWorkflowModal = signal<boolean>(false);
-  createDefaultStatus = signal<string>('todo');
+  createDefaultStatus = signal<string>('');
   editingTask = signal<Task | null>(null);
   activeDetailTask = signal<Task | null>(null);
 
   constructor(
     public taskService: TaskService,
-    public projectService: ProjectService
-  ) {}
+    public projectService: ProjectService,
+    public workflowService: WorkflowService
+  ) {
+    // Automatically pre-select first project if available
+    const projList = this.projectService.projects();
+    if (projList.length > 0) {
+      this.selectedProjectId.set(projList[0].id);
+    }
+  }
 
-  activeColumns = computed<WorkflowColumn[]>(() => {
-    return this.projectService.getProjectWorkflowColumns(this.selectedProjectId());
+  activeColumns = computed<Workflow[]>(() => {
+    return this.workflowService.getWorkflowsForProject(this.selectedProjectId());
   });
 
   filteredTasks = computed(() => {
@@ -406,8 +459,8 @@ export class TasksComponent {
     });
   });
 
-  getColumnTasks(colId: string): Task[] {
-    return this.filteredTasks().filter(t => t.status === colId);
+  getColumnTasks(statusName: string): Task[] {
+    return this.filteredTasks().filter(t => t.status === statusName);
   }
 
   getSelectedProjectObj(): Project | null {
@@ -425,7 +478,7 @@ export class TasksComponent {
     }
   }
 
-  openCreateModal(defaultStatus: string = 'todo') {
+  openCreateModal(defaultStatus: string = '') {
     this.editingTask.set(null);
     this.createDefaultStatus.set(defaultStatus);
     this.showCreateModal.set(true);

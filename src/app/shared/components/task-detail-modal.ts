@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
-import { Task, TaskComment, WorkflowColumn } from '../../core/models/project.model';
+import { WorkflowService } from '../../core/services/workflow.service';
+import { Task, TaskComment, Workflow } from '../../core/models/project.model';
 
 @Component({
   selector: 'app-task-detail-modal',
@@ -113,7 +114,7 @@ import { Task, TaskComment, WorkflowColumn } from '../../core/models/project.mod
                 (ngModelChange)="updateStatus($event)"
               >
                 @for (col of getAvailableStatuses(); track col.id) {
-                  <option [value]="col.id">{{ col.name }}</option>
+                  <option [value]="col.name">{{ col.name }}</option>
                 }
               </select>
             </div>
@@ -349,7 +350,8 @@ export class TaskDetailModalComponent implements OnInit {
 
   constructor(
     private taskService: TaskService,
-    private projectService: ProjectService
+    private projectService: ProjectService,
+    private workflowService: WorkflowService
   ) {}
 
   async ngOnInit() {
@@ -359,8 +361,8 @@ export class TaskDetailModalComponent implements OnInit {
     }
   }
 
-  getAvailableStatuses(): WorkflowColumn[] {
-    return this.projectService.getProjectWorkflowColumns(this.task?.project_id);
+  getAvailableStatuses(): Workflow[] {
+    return this.workflowService.getWorkflowsForProject(this.task?.project_id);
   }
 
   getProjectName(projectId?: string): string | null {
@@ -379,7 +381,13 @@ export class TaskDetailModalComponent implements OnInit {
   }
 
   async updateStatus(newStatus: string) {
-    const updated = await this.taskService.updateTask(this.task.id, { status: newStatus });
+    const available = this.getAvailableStatuses();
+    const wf = available.find(w => w.name === newStatus);
+
+    const updated = await this.taskService.updateTask(this.task.id, {
+      status: newStatus,
+      workflow_id: wf?.id
+    });
     if (updated) this.task = updated;
   }
 

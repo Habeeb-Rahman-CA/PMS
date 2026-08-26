@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { SupabaseService } from './supabase.service';
-import { DEFAULT_WORKFLOW_COLUMNS, Project, ProjectActivity, Task, WorkflowColumn } from '../models/project.model';
+import { Project, ProjectActivity, Task } from '../models/project.model';
 
 @Injectable({
   providedIn: 'root'
@@ -68,17 +68,6 @@ export class ProjectService {
     }
   }
 
-  getProjectWorkflowColumns(projectId?: string): WorkflowColumn[] {
-    if (!projectId || projectId === 'all') {
-      return DEFAULT_WORKFLOW_COLUMNS;
-    }
-    const proj = this.projects().find(p => p.id === projectId);
-    if (proj && proj.workflow_columns && proj.workflow_columns.length > 0) {
-      return proj.workflow_columns;
-    }
-    return DEFAULT_WORKFLOW_COLUMNS;
-  }
-
   // --- CRUD Operations ---
 
   async createProject(projectData: Partial<Project>): Promise<Project> {
@@ -92,7 +81,6 @@ export class ProjectService {
       status: projectData.status || 'active',
       labels: projectData.labels || [],
       color: projectData.color || '#06b6d4',
-      workflow_columns: projectData.workflow_columns || DEFAULT_WORKFLOW_COLUMNS,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -115,8 +103,7 @@ export class ProjectService {
           repository_url: newProj.repository_url,
           status: newProj.status,
           labels: newProj.labels,
-          color: newProj.color,
-          workflow_columns: newProj.workflow_columns
+          color: newProj.color
         }])
         .select();
 
@@ -168,7 +155,6 @@ export class ProjectService {
           status: updates.status,
           labels: updates.labels,
           color: updates.color,
-          workflow_columns: updates.workflow_columns,
           updated_at: new Date().toISOString()
         })
         .eq('id', id);
