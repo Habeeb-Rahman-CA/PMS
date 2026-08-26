@@ -1,29 +1,29 @@
 export interface Project {
   id: string;
-  user_id: string;
+  user_id?: string;
   name: string;
   slug: string;
   description?: string;
   repository_url?: string;
   status: 'active' | 'archived' | 'completed';
+  labels: string[];
   color: string;
   created_at: string;
   updated_at: string;
 }
 
-export interface Workflow {
+export interface ProjectActivity {
   id: string;
   project_id: string;
-  name: string;
-  position: number;
-  created_at: string;
+  action: string;
+  description: string;
+  timestamp: string;
 }
 
 export interface Task {
   id: string;
   project_id: string;
-  workflow_id?: string;
-  user_id: string;
+  user_id?: string;
   title: string;
   description?: string;
   type: 'task' | 'bug' | 'story' | 'note';
@@ -32,17 +32,6 @@ export interface Task {
   position: number;
   is_next: boolean;
   completed: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface TechNote {
-  id: string;
-  project_id: string;
-  user_id: string;
-  title: string;
-  content: string;
-  tags?: string[];
   created_at: string;
   updated_at: string;
 }

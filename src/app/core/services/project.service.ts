@@ -1,69 +1,229 @@
 import { Injectable, signal } from '@angular/core';
 import { SupabaseService } from './supabase.service';
-import { Project, Task, Workflow, TechNote } from '../models/project.model';
+import { Project, ProjectActivity, Task } from '../models/project.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ProjectService {
   projects = signal<Project[]>([]);
+  activities = signal<ProjectActivity[]>([]);
+  tasks = signal<Task[]>([]);
   activeProject = signal<Project | null>(null);
-  nextTasks = signal<Task[]>([]);
   loading = signal<boolean>(false);
 
-  constructor(private supabaseService: SupabaseService) {}
-
-  async loadProjects() {
-    this.loading.set(true);
-    const { data, error } = await this.supabaseService.supabase
-      .from('projects')
-      .select('*')
-      .order('updated_at', { ascending: false });
-
-    if (!error && data) {
-      this.projects.set(data as Project[]);
-    }
-    this.loading.set(false);
+  constructor(private supabaseService: SupabaseService) {
+    this.loadFromStorage();
+    this.loadFromSupabase();
   }
 
-  async loadNextUpTasks() {
-    const { data, error } = await this.supabaseService.supabase
-      .from('tasks')
-      .select('*')
-      .eq('is_next', true)
-      .eq('completed', false)
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      this.nextTasks.set(data as Task[]);
-    }
-  }
-
-  async createProject(project: Partial<Project>) {
-    const { data, error } = await this.supabaseService.supabase
-      .from('projects')
-      .insert([project])
-      .select();
-
-    if (!error && data) {
-      await this.loadProjects();
-      return data[0] as Project;
-    }
-    throw error;
-  }
-
-  async createTask(task: Partial<Task>) {
-    const { data, error } = await this.supabaseService.supabase
-      .from('tasks')
-      .insert([task])
-      .select();
-
-    if (!error && data) {
-      if (task.is_next) {
-        await this.loadNextUpTasks();
+  private loadFromStorage() {
+    const cached = localStorage.getItem('devflow_projects_data');
+    if (cached) {
+      try {
+        const data = JSON.parse(cached);
+        if (data.projects && Array.isArray(data.projects) && data.projects.length > 0) {
+          this.projects.set(data.projects);
+          this.activeProject.set(data.projects[0]);
+        }
+        if (data.activities && Array.isArray(data.activities)) {
+          this.activities.set(data.activities);
+        }
+      } catch (e) {
+        console.error('Failed to load local cache', e);
       }
-      return data[0] as Task;
     }
-    throw error;
+  }
+
+  private saveToStorage() {
+    localStorage.setItem('devflow_projects_data', JSON.stringify({
+      projects: this.projects(),
+      activities: this.activities()
+    }));
+  }
+
+  async loadFromSupabase() {
+    this.loading.set(true);
+    try {
+      const { data, error } = await this.supabaseService.supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        this.projects.set(data as Project[]);
+        if (data.length > 0) {
+          this.activeProject.set(data[0] as Project);
+        }
+        this.saveToStorage();
+      }
+    } catch (e) {
+      console.warn('Could not load projects from Supabase', e);
+    } finally {
+      this.loading.set(false);
+    }
+  }
+
+  // --- CRUD Operations ---
+
+  async createProject(projectData: Partial<Project>): Promise<Project> {
+    const generatedId = crypto.randomUUID();
+    const newProj: Project = {
+      id: generatedId,
+      name: projectData.name || 'Untitled Project',
+      slug: (projectData.name || 'untitled').toLowerCase().replace(/\s+/g, '-'),
+      description: projectData.description || '',
+      repository_url: projectData.repository_url || '',
+      status: projectData.status || 'active',
+      labels: projectData.labels || [],
+      color: projectData.color || '#06b6d4',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    // Update state immediately
+    this.projects.update(list => [newProj, ...list]);
+    this.activeProject.set(newProj);
+    this.logActivity(newProj.id, 'Created', `Project "${newProj.name}" created`);
+    this.saveToStorage();
+
+    // Async sync to Supabase PostgreSQL database
+    try {
+      const { data, error } = await this.supabaseService.supabase
+        .from('projects')
+        .insert([{
+          id: newProj.id,
+          name: newProj.name,
+          slug: newProj.slug,
+          description: newProj.description,
+          repository_url: newProj.repository_url,
+          status: newProj.status,
+          labels: newProj.labels,
+          color: newProj.color
+        }])
+        .select();
+
+      if (error) {
+        console.error('Supabase project insert error:', error);
+      } else if (data && data[0]) {
+        const inserted = data[0] as Project;
+        this.projects.update(list => list.map(p => p.id === generatedId ? inserted : p));
+        if (this.activeProject()?.id === generatedId) this.activeProject.set(inserted);
+        this.saveToStorage();
+        return inserted;
+      }
+    } catch (e) {
+      console.warn('Supabase sync warning:', e);
+    }
+
+    return newProj;
+  }
+
+  async updateProject(id: string, updates: Partial<Project>): Promise<Project | null> {
+    const updatedFields = {
+      ...updates,
+      updated_at: new Date().toISOString()
+    };
+
+    let updatedProj: Project | null = null;
+    this.projects.update(list => list.map(p => {
+      if (p.id === id) {
+        updatedProj = { ...p, ...updatedFields };
+        return updatedProj;
+      }
+      return p;
+    }));
+
+    if (updatedProj) {
+      if (this.activeProject()?.id === id) this.activeProject.set(updatedProj);
+      this.logActivity(id, 'Updated', `Project metadata updated`);
+      this.saveToStorage();
+    }
+
+    try {
+      const { error } = await this.supabaseService.supabase
+        .from('projects')
+        .update({
+          name: updates.name,
+          slug: updates.name ? updates.name.toLowerCase().replace(/\s+/g, '-') : undefined,
+          description: updates.description,
+          repository_url: updates.repository_url,
+          status: updates.status,
+          labels: updates.labels,
+          color: updates.color,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('Supabase update error:', error);
+      }
+    } catch (e) {
+      console.warn('Supabase update error:', e);
+    }
+
+    return updatedProj;
+  }
+
+  async archiveProject(id: string) {
+    const proj = this.projects().find(p => p.id === id);
+    if (!proj) return;
+    const newStatus = proj.status === 'archived' ? 'active' : 'archived';
+    await this.updateProject(id, { status: newStatus });
+  }
+
+  async deleteProject(id: string) {
+    const proj = this.projects().find(p => p.id === id);
+    if (!proj) return;
+
+    this.projects.update(list => list.filter(p => p.id !== id));
+    this.tasks.update(list => list.filter(t => t.project_id !== id));
+    this.activities.update(list => list.filter(a => a.project_id !== id));
+
+    if (this.activeProject()?.id === id) {
+      const remaining = this.projects();
+      this.activeProject.set(remaining.length > 0 ? remaining[0] : null);
+    }
+
+    this.saveToStorage();
+
+    try {
+      const { error } = await this.supabaseService.supabase
+        .from('projects')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Supabase delete error:', error);
+      }
+    } catch (e) {
+      console.warn('Supabase delete error:', e);
+    }
+  }
+
+  logActivity(projectId: string, action: string, description: string) {
+    const newAct: ProjectActivity = {
+      id: crypto.randomUUID(),
+      project_id: projectId,
+      action,
+      description,
+      timestamp: new Date().toISOString()
+    };
+    this.activities.update(list => [newAct, ...list]);
+  }
+
+  getProjectProgress(projectId: string): { completed: number; total: number; percent: number } {
+    const projTasks = this.tasks().filter(t => t.project_id === projectId);
+    if (projTasks.length === 0) return { completed: 0, total: 0, percent: 0 };
+    const completed = projTasks.filter(t => t.completed).length;
+    const percent = Math.round((completed / projTasks.length) * 100);
+    return { completed, total: projTasks.length, percent };
+  }
+
+  getProjectRecentActivity(projectId: string): ProjectActivity[] {
+    return this.activities()
+      .filter(a => a.project_id === projectId)
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 5);
   }
 }

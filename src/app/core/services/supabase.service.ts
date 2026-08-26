@@ -6,10 +6,27 @@ import { environment } from '../../../environments/environment';
   providedIn: 'root'
 })
 export class SupabaseService {
-  private client: SupabaseClient;
+  private client!: SupabaseClient;
 
   constructor() {
-    this.client = createClient(environment.supabaseUrl, environment.supabaseKey);
+    this.initClient();
+  }
+
+  private initClient() {
+    try {
+      const isPlaceholder = !environment.supabaseUrl || environment.supabaseUrl.includes('YOUR_SUPABASE');
+      const validUrl = isPlaceholder ? 'https://placeholder.supabase.co' : environment.supabaseUrl;
+      const validKey = isPlaceholder ? 'placeholder-key' : environment.supabaseKey;
+
+      this.client = createClient(validUrl, validKey, {
+        auth: { persistSession: false }
+      });
+    } catch (e) {
+      console.warn('Supabase client initialized in fallback mode', e);
+      this.client = createClient('https://placeholder.supabase.co', 'placeholder-key', {
+        auth: { persistSession: false }
+      });
+    }
   }
 
   get supabase(): SupabaseClient {

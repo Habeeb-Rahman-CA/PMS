@@ -14,14 +14,19 @@ export class AuthService {
   }
 
   private async initAuth() {
-    const { data: { session } } = await this.supabaseService.supabase.auth.getSession();
-    this.session.set(session);
-    this.user.set(session?.user ?? null);
-
-    this.supabaseService.supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+    try {
+      const { data } = await this.supabaseService.supabase.auth.getSession();
+      const session = data?.session ?? null;
       this.session.set(session);
       this.user.set(session?.user ?? null);
-    });
+
+      this.supabaseService.supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+        this.session.set(session);
+        this.user.set(session?.user ?? null);
+      });
+    } catch (e) {
+      console.warn('Auth initialization skipped in offline mode', e);
+    }
   }
 
   async signInWithEmail(email: string) {
