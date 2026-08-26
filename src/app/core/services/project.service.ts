@@ -22,9 +22,11 @@ export class ProjectService {
     if (cached) {
       try {
         const data = JSON.parse(cached);
-        if (data.projects && Array.isArray(data.projects) && data.projects.length > 0) {
+        if (data.projects && Array.isArray(data.projects)) {
           this.projects.set(data.projects);
-          this.activeProject.set(data.projects[0]);
+          if (data.projects.length > 0) {
+            this.activeProject.set(data.projects[0]);
+          }
         }
         if (data.activities && Array.isArray(data.activities)) {
           this.activities.set(data.activities);
@@ -54,6 +56,8 @@ export class ProjectService {
         this.projects.set(data as Project[]);
         if (data.length > 0) {
           this.activeProject.set(data[0] as Project);
+        } else {
+          this.activeProject.set(null);
         }
         this.saveToStorage();
       }

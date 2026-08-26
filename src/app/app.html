@@ -10,13 +10,13 @@
       </a>
 
       <nav class="desktop-nav">
-        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">
-          <i class="fi fi-rr-dashboard"></i>
-          <span>Dashboard</span>
-        </a>
         <a routerLink="/projects" routerLinkActive="active" class="nav-link">
           <i class="fi fi-rr-folder"></i>
           <span>Projects</span>
+        </a>
+        <a routerLink="/tasks" routerLinkActive="active" class="nav-link">
+          <i class="fi fi-rr-list-check"></i>
+          <span>Tasks & Issues</span>
         </a>
       </nav>
     </div>
@@ -50,13 +50,13 @@
         </div>
 
         <div class="drawer-links">
-          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="drawer-link" (click)="closeMobileMenu()">
-            <i class="fi fi-rr-dashboard"></i>
-            <span>Dashboard</span>
-          </a>
           <a routerLink="/projects" routerLinkActive="active" class="drawer-link" (click)="closeMobileMenu()">
             <i class="fi fi-rr-folder"></i>
             <span>Projects</span>
+          </a>
+          <a routerLink="/tasks" routerLinkActive="active" class="drawer-link" (click)="closeMobileMenu()">
+            <i class="fi fi-rr-list-check"></i>
+            <span>Tasks & Issues</span>
           </a>
         </div>
 
