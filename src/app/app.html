@@ -1,27 +1,97 @@
-<div class="app-container">
-  <header class="setup-header">
-    <div class="brand">
-      <i class="fi fi-sr-bolt brand-icon"></i>
-      <h1>DevFlow Workspace</h1>
+<div class="app-shell">
+  <!-- Desktop / Main Header Navbar -->
+  <header class="app-header glass-panel">
+    <div class="header-left">
+      <a routerLink="/" class="brand-link" (click)="closeMobileMenu()">
+        <div class="brand-icon">
+          <i class="fi fi-sr-bolt"></i>
+        </div>
+        <span class="brand-title">Dev<span class="highlight">Flow</span></span>
+      </a>
+
+      <nav class="desktop-nav">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-link">
+          <i class="fi fi-rr-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a routerLink="/projects" routerLinkActive="active" class="nav-link">
+          <i class="fi fi-rr-folder"></i>
+          <span>Projects</span>
+        </a>
+        <a routerLink="/tech-notes" routerLinkActive="active" class="nav-link">
+          <i class="fi fi-rr-document-signed"></i>
+          <span>Tech Notes</span>
+        </a>
+      </nav>
     </div>
-    <p class="subtitle">Developer Project Manager setup initialized successfully.</p>
+
+    <div class="header-right">
+      <div class="status-indicator" title="Cloudflare Pages & Supabase Stack">
+        <span class="status-dot"></span>
+        <span class="status-text">Cloudflare Edge</span>
+      </div>
+
+      <button class="mobile-toggle-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation menu">
+        <i [class]="mobileMenuOpen() ? 'fi fi-rr-cross' : 'fi fi-rr-menu-burger'"></i>
+      </button>
+    </div>
   </header>
 
-  <main class="setup-main">
-    <div class="setup-card">
-      <div class="status-badge">
-        <i class="fi fi-rr-check-circle"></i> Baseline Setup Complete
-      </div>
-      <h2>Ready for Feature Implementation</h2>
-      <p>Angular v21 workspace, Supabase client infrastructure, database schemas, and type-safe core services have been established.</p>
-      <div class="tech-stack-pills">
-        <span class="pill"><i class="fi fi-rr-code-branch"></i> Angular 21</span>
-        <span class="pill"><i class="fi fi-rr-database"></i> Supabase / PostgreSQL</span>
-        <span class="pill"><i class="fi fi-rr-cloud"></i> Cloudflare Pages Edge</span>
-        <span class="pill"><i class="fi fi-rr-mobile-button"></i> PWA Capabilities</span>
-      </div>
+  <!-- Mobile Drawer Overlay -->
+  @if (mobileMenuOpen()) {
+    <div class="mobile-drawer-overlay" (click)="closeMobileMenu()">
+      <nav class="mobile-drawer" (click)="$event.stopPropagation()">
+        <div class="drawer-header">
+          <div class="brand-link">
+            <div class="brand-icon">
+              <i class="fi fi-sr-bolt"></i>
+            </div>
+            <span class="brand-title">DevFlow</span>
+          </div>
+          <button class="btn-close" (click)="closeMobileMenu()">
+            <i class="fi fi-rr-cross"></i>
+          </button>
+        </div>
+
+        <div class="drawer-links">
+          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="drawer-link" (click)="closeMobileMenu()">
+            <i class="fi fi-rr-dashboard"></i>
+            <span>Dashboard</span>
+          </a>
+          <a routerLink="/projects" routerLinkActive="active" class="drawer-link" (click)="closeMobileMenu()">
+            <i class="fi fi-rr-folder"></i>
+            <span>Projects</span>
+          </a>
+          <a routerLink="/tech-notes" routerLinkActive="active" class="drawer-link" (click)="closeMobileMenu()">
+            <i class="fi fi-rr-document-signed"></i>
+            <span>Tech Notes</span>
+          </a>
+        </div>
+
+        <div class="drawer-footer">
+          <span class="edge-tag"><i class="fi fi-rr-cloud"></i> Deployed on Cloudflare Pages</span>
+        </div>
+      </nav>
     </div>
+  }
+
+  <!-- Main View Container Slot -->
+  <main class="app-main">
+    <router-outlet />
   </main>
 
-  <router-outlet />
+  <!-- Minimalist Developer Shell Footer -->
+  <footer class="app-footer">
+    <div class="footer-content">
+      <div class="footer-left">
+        <i class="fi fi-sr-bolt text-cyan"></i>
+        <span>DevFlow Personal Workspace</span>
+      </div>
+      <div class="footer-right">
+        <span><i class="fi fi-rr-cloud"></i> Cloudflare Pages</span>
+        <span class="separator">•</span>
+        <span><i class="fi fi-rr-database"></i> Supabase PostgreSQL</span>
+      </div>
+    </div>
+  </footer>
 </div>
