@@ -11,6 +11,7 @@ create table if not exists public.projects (
     status text not null default 'active', -- active, archived, completed
     labels text[] default '{}',
     color text default '#06b6d4',
+    workflow_columns jsonb default null,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null,
     updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -23,7 +24,7 @@ create table if not exists public.tasks (
     title text not null,
     description text,
     type text not null default 'task', -- task, bug, story, epic
-    status text not null default 'todo', -- backlog, todo, in_progress, in_review, done
+    status text not null default 'todo', -- backlog, todo, in_progress, in_review, done, or custom status
     priority text not null default 'medium', -- low, medium, high, urgent
     labels text[] default '{}',
     assignee text default 'Self',

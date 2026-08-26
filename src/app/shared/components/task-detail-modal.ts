@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
-import { Task, TaskComment, TaskStatus } from '../../core/models/project.model';
+import { Task, TaskComment, WorkflowColumn } from '../../core/models/project.model';
 
 @Component({
   selector: 'app-task-detail-modal',
@@ -112,11 +112,9 @@ import { Task, TaskComment, TaskStatus } from '../../core/models/project.model';
                 [ngModel]="task.status"
                 (ngModelChange)="updateStatus($event)"
               >
-                <option value="backlog">Backlog</option>
-                <option value="todo">To Do</option>
-                <option value="in_progress">In Progress</option>
-                <option value="in_review">In Review</option>
-                <option value="done">Done</option>
+                @for (col of getAvailableStatuses(); track col.id) {
+                  <option [value]="col.id">{{ col.name }}</option>
+                }
               </select>
             </div>
 
@@ -361,6 +359,10 @@ export class TaskDetailModalComponent implements OnInit {
     }
   }
 
+  getAvailableStatuses(): WorkflowColumn[] {
+    return this.projectService.getProjectWorkflowColumns(this.task?.project_id);
+  }
+
   getProjectName(projectId?: string): string | null {
     if (!projectId) return null;
     const proj = this.projectService.projects().find(p => p.id === projectId);
@@ -376,7 +378,7 @@ export class TaskDetailModalComponent implements OnInit {
     }
   }
 
-  async updateStatus(newStatus: TaskStatus) {
+  async updateStatus(newStatus: string) {
     const updated = await this.taskService.updateTask(this.task.id, { status: newStatus });
     if (updated) this.task = updated;
   }

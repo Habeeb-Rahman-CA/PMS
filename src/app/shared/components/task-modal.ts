@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
-import { Task, TaskPriority, TaskStatus, TaskType } from '../../core/models/project.model';
+import { Task, TaskPriority, TaskType, WorkflowColumn } from '../../core/models/project.model';
 
 @Component({
   selector: 'app-task-modal',
@@ -65,11 +65,9 @@ import { Task, TaskPriority, TaskStatus, TaskType } from '../../core/models/proj
             <div class="form-group half">
               <label class="form-label">Status</label>
               <select class="form-select" [(ngModel)]="status" name="status">
-                <option value="backlog">Backlog</option>
-                <option value="todo">To Do</option>
-                <option value="in_progress">In Progress</option>
-                <option value="in_review">In Review</option>
-                <option value="done">Done</option>
+                @for (col of getAvailableStatuses(); track col.id) {
+                  <option [value]="col.id">{{ col.name }}</option>
+                }
               </select>
             </div>
 
@@ -180,14 +178,14 @@ import { Task, TaskPriority, TaskStatus, TaskType } from '../../core/models/proj
 export class TaskModalComponent implements OnInit {
   @Input() taskToEdit: Task | null = null;
   @Input() defaultProjectId: string = '';
-  @Input() defaultStatus: TaskStatus = 'todo';
+  @Input() defaultStatus: string = 'todo';
   @Output() close = new EventEmitter<void>();
 
   title = '';
   description = '';
   projectId = '';
   type: TaskType = 'task';
-  status: TaskStatus = 'todo';
+  status: string = 'todo';
   priority: TaskPriority = 'medium';
   assignee = 'Self';
   dueDate = '';
@@ -217,6 +215,10 @@ export class TaskModalComponent implements OnInit {
       if (this.defaultProjectId) this.projectId = this.defaultProjectId;
       if (this.defaultStatus) this.status = this.defaultStatus;
     }
+  }
+
+  getAvailableStatuses(): WorkflowColumn[] {
+    return this.projectService.getProjectWorkflowColumns(this.projectId);
   }
 
   async saveTask() {

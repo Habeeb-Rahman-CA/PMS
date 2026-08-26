@@ -3,14 +3,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
-import { Task, TaskStatus, TaskType } from '../../core/models/project.model';
+import { Project, Task, WorkflowColumn } from '../../core/models/project.model';
 import { TaskModalComponent } from '../../shared/components/task-modal';
 import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
+import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
 
 @Component({
   selector: 'app-tasks',
   standalone: true,
-  imports: [CommonModule, FormsModule, TaskModalComponent, TaskDetailModalComponent],
+  imports: [CommonModule, FormsModule, TaskModalComponent, TaskDetailModalComponent, WorkflowModalComponent],
   template: `
     <div class="tasks-page-container">
       <!-- Header Banner -->
@@ -24,6 +25,10 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
           </div>
 
           <div class="header-actions">
+            <button class="btn btn-secondary" (click)="openWorkflowModal()">
+              <i class="fi fi-rr-settings-sliders"></i> Configure Workflow
+            </button>
+
             <button class="btn btn-primary" (click)="openCreateModal()">
               <i class="fi fi-rr-plus"></i> Create Issue
             </button>
@@ -88,18 +93,18 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
 
       <!-- Kanban Workflow Board -->
       <div class="kanban-board">
-        @for (col of workflowColumns; track col.id) {
+        @for (col of activeColumns(); track col.id) {
           <div class="kanban-column glass-panel">
             <div class="column-header">
               <div class="column-title">
-                <span class="col-dot" [class]="'dot-' + col.id"></span>
-                <h3>{{ col.title }}</h3>
+                <span class="col-dot" [style.background-color]="col.color || '#06b6d4'"></span>
+                <h3>{{ col.name }}</h3>
                 <span class="col-count">{{ getColumnTasks(col.id).length }}</span>
               </div>
               <button
                 class="btn btn-ghost btn-sm btn-icon"
                 (click)="openCreateModal(col.id)"
-                title="Add Issue to {{ col.title }}"
+                title="Add Issue to {{ col.name }}"
               >
                 <i class="fi fi-rr-plus"></i>
               </button>
@@ -107,7 +112,7 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
 
             <div class="column-cards">
               @if (getColumnTasks(col.id).length === 0) {
-                <div class="empty-column">No issues</div>
+                <div class="empty-column">No issues in {{ col.name }}</div>
               } @else {
                 @for (t of getColumnTasks(col.id); track t.id) {
                   <div
@@ -156,6 +161,7 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       @if (showCreateModal()) {
         <app-task-modal
           [taskToEdit]="editingTask()"
+          [defaultProjectId]="selectedProjectId() === 'all' ? '' : selectedProjectId()"
           [defaultStatus]="createDefaultStatus()"
           (close)="closeCreateModal()"
         ></app-task-modal>
@@ -168,6 +174,14 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
           (close)="closeDetailModal()"
           (editTask)="openEditModal($event)"
         ></app-task-detail-modal>
+      }
+
+      <!-- Workflow Config Modal -->
+      @if (showWorkflowModal()) {
+        <app-workflow-modal
+          [project]="getSelectedProjectObj()"
+          (close)="closeWorkflowModal()"
+        ></app-workflow-modal>
       }
     </div>
   `,
@@ -205,6 +219,11 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       font-size: 0.875rem;
       margin-top: 0.2rem;
     }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
     .filter-bar {
       display: flex;
       justify-content: space-between;
@@ -220,7 +239,7 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       flex-wrap: wrap;
     }
     .filter-select {
-      width: 150px;
+      width: 160px;
       padding: 0.4rem 0.65rem;
       font-size: 0.825rem;
     }
@@ -242,20 +261,10 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
     }
     .kanban-board {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 1.25rem;
       overflow-x: auto;
       padding-bottom: 1rem;
-    }
-    @media (max-width: 1200px) {
-      .kanban-board {
-        grid-template-columns: repeat(3, 300px);
-      }
-    }
-    @media (max-width: 768px) {
-      .kanban-board {
-        grid-template-columns: repeat(1, 100%);
-      }
     }
     .kanban-column {
       display: flex;
@@ -293,12 +302,6 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       height: 10px;
       border-radius: 50%;
     }
-    .dot-backlog { background: #6b7280; }
-    .dot-todo { background: #3b82f6; }
-    .dot-in_progress { background: #f59e0b; }
-    .dot-in_review { background: #8b5cf6; }
-    .dot-done { background: #10b981; }
-
     .column-cards {
       display: flex;
       flex-direction: column;
@@ -368,22 +371,19 @@ export class TasksComponent {
   searchQuery = signal<string>('');
 
   showCreateModal = signal<boolean>(false);
-  createDefaultStatus = signal<TaskStatus>('todo');
+  showWorkflowModal = signal<boolean>(false);
+  createDefaultStatus = signal<string>('todo');
   editingTask = signal<Task | null>(null);
   activeDetailTask = signal<Task | null>(null);
-
-  workflowColumns: { id: TaskStatus; title: string }[] = [
-    { id: 'backlog', title: 'Backlog' },
-    { id: 'todo', title: 'To Do' },
-    { id: 'in_progress', title: 'In Progress' },
-    { id: 'in_review', title: 'In Review' },
-    { id: 'done', title: 'Done' }
-  ];
 
   constructor(
     public taskService: TaskService,
     public projectService: ProjectService
   ) {}
+
+  activeColumns = computed<WorkflowColumn[]>(() => {
+    return this.projectService.getProjectWorkflowColumns(this.selectedProjectId());
+  });
 
   filteredTasks = computed(() => {
     const list = this.taskService.tasks();
@@ -406,8 +406,14 @@ export class TasksComponent {
     });
   });
 
-  getColumnTasks(colId: TaskStatus): Task[] {
+  getColumnTasks(colId: string): Task[] {
     return this.filteredTasks().filter(t => t.status === colId);
+  }
+
+  getSelectedProjectObj(): Project | null {
+    const id = this.selectedProjectId();
+    if (!id || id === 'all') return null;
+    return this.projectService.projects().find(p => p.id === id) || null;
   }
 
   getTypeIcon(type: string): string {
@@ -419,7 +425,7 @@ export class TasksComponent {
     }
   }
 
-  openCreateModal(defaultStatus: TaskStatus = 'todo') {
+  openCreateModal(defaultStatus: string = 'todo') {
     this.editingTask.set(null);
     this.createDefaultStatus.set(defaultStatus);
     this.showCreateModal.set(true);
@@ -434,6 +440,14 @@ export class TasksComponent {
   closeCreateModal() {
     this.showCreateModal.set(false);
     this.editingTask.set(null);
+  }
+
+  openWorkflowModal() {
+    this.showWorkflowModal.set(true);
+  }
+
+  closeWorkflowModal() {
+    this.showWorkflowModal.set(false);
   }
 
   openDetailModal(task: Task) {
