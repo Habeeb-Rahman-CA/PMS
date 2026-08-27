@@ -57,11 +57,24 @@ create table if not exists public.task_comments (
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
+-- 5. Ideas / Inbox Table
+create table if not exists public.ideas (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid references auth.users(id) on delete cascade,
+    title text not null,
+    description text,
+    tags text[] default '{}',
+    status text not null default 'inbox', -- inbox, converted_project, converted_task, archived
+    converted_id uuid,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
 -- Enable Row Level Security (RLS)
 alter table public.projects enable row level security;
 alter table public.workflows enable row level security;
 alter table public.tasks enable row level security;
 alter table public.task_comments enable row level security;
+alter table public.ideas enable row level security;
 
 -- Row Level Security Policies
 create policy "Allow public access for projects" 
@@ -81,5 +94,10 @@ create policy "Allow public access for tasks"
 
 create policy "Allow public access for task_comments" 
     on public.task_comments for all 
+    using (true) 
+    with check (true);
+
+create policy "Allow public access for ideas" 
+    on public.ideas for all 
     using (true) 
     with check (true);

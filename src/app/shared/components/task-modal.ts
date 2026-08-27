@@ -184,7 +184,7 @@ export class TaskModalComponent implements OnInit {
   @Input() taskToEdit: Task | null = null;
   @Input() defaultProjectId: string = '';
   @Input() defaultStatus: string = '';
-  @Output() close = new EventEmitter<void>();
+  @Output() close = new EventEmitter<Task | undefined>();
 
   title = '';
   description = '';
@@ -239,8 +239,10 @@ export class TaskModalComponent implements OnInit {
     const finalStatus = this.status || (available.length > 0 ? available[0].name : '');
     const activeWf = available.find(w => w.name === finalStatus);
 
+    let resTask: Task | undefined = undefined;
+
     if (this.isEditMode && this.taskToEdit) {
-      await this.taskService.updateTask(this.taskToEdit.id, {
+      const updated = await this.taskService.updateTask(this.taskToEdit.id, {
         title: this.title,
         description: this.description,
         project_id: this.projectId,
@@ -252,8 +254,9 @@ export class TaskModalComponent implements OnInit {
         due_date: this.dueDate,
         labels: parsedLabels
       });
+      resTask = updated || undefined;
     } else {
-      await this.taskService.createTask({
+      const created = await this.taskService.createTask({
         title: this.title,
         description: this.description,
         project_id: this.projectId,
@@ -265,8 +268,10 @@ export class TaskModalComponent implements OnInit {
         due_date: this.dueDate,
         labels: parsedLabels
       });
+      resTask = created;
     }
 
-    this.close.emit();
+    this.close.emit(resTask);
   }
 }
+

@@ -183,8 +183,8 @@ import { Project } from '../../core/models/project.model';
   `]
 })
 export class ProjectModalComponent implements OnInit {
-  @Input() projectToEdit: Project | null = null;
-  @Output() close = new EventEmitter<void>();
+  @Input() projectToEdit: Partial<Project> | null = null;
+  @Output() close = new EventEmitter<Project | undefined>();
 
   name = '';
   repositoryUrl = '';
@@ -196,17 +196,17 @@ export class ProjectModalComponent implements OnInit {
   availableColors = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#f43f5e', '#3b82f6'];
 
   get isEditMode(): boolean {
-    return !!this.projectToEdit;
+    return !!(this.projectToEdit && this.projectToEdit.id);
   }
 
   constructor(private projectService: ProjectService) {}
 
   ngOnInit() {
     if (this.projectToEdit) {
-      this.name = this.projectToEdit.name;
+      this.name = this.projectToEdit.name || '';
       this.repositoryUrl = this.projectToEdit.repository_url || '';
       this.description = this.projectToEdit.description || '';
-      this.status = this.projectToEdit.status;
+      this.status = this.projectToEdit.status || 'active';
       this.labelsInput = (this.projectToEdit.labels || []).join(', ');
       this.color = this.projectToEdit.color || '#06b6d4';
     }
@@ -220,8 +220,10 @@ export class ProjectModalComponent implements OnInit {
       .map(l => l.trim().toLowerCase())
       .filter(l => l.length > 0);
 
-    if (this.isEditMode && this.projectToEdit) {
-      await this.projectService.updateProject(this.projectToEdit.id, {
+    let resultProject: Project | undefined = undefined;
+
+    if (this.isEditMode && this.projectToEdit && this.projectToEdit.id) {
+      const updated = await this.projectService.updateProject(this.projectToEdit.id, {
         name: this.name,
         repository_url: this.repositoryUrl,
         description: this.description,
@@ -229,8 +231,9 @@ export class ProjectModalComponent implements OnInit {
         labels: parsedLabels,
         color: this.color
       });
+      resultProject = updated || undefined;
     } else {
-      await this.projectService.createProject({
+      const created = await this.projectService.createProject({
         name: this.name,
         repository_url: this.repositoryUrl,
         description: this.description,
@@ -238,8 +241,9 @@ export class ProjectModalComponent implements OnInit {
         labels: parsedLabels,
         color: this.color
       });
+      resultProject = created;
     }
 
-    this.close.emit();
+    this.close.emit(resultProject);
   }
 }
