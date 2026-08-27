@@ -1,6 +1,14 @@
 export type TaskType = 'story' | 'bug' | 'task' | 'epic';
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
+export interface UserProfile {
+  id: string;
+  email: string;
+  display_name?: string;
+  avatar_url?: string;
+  created_at: string;
+}
+
 export interface Workflow {
   id: string;
   project_id: string;
@@ -62,4 +70,3 @@ export interface TaskComment {
   created_at: string;
   updated_at?: string;
 }
-

@@ -2,7 +2,6 @@ import { Routes } from '@angular/router';
 import { ProjectsComponent } from './features/projects/projects';
 import { TasksComponent } from './features/tasks/tasks';
 import { MyWorkComponent } from './features/my-work/my-work';
-import { InboxComponent } from './features/inbox/inbox';
 
 export const routes: Routes = [
   {
@@ -16,10 +15,6 @@ export const routes: Routes = [
   {
     path: 'my-work',
     component: MyWorkComponent
-  },
-  {
-    path: 'inbox',
-    component: InboxComponent
   },
   {
     path: 'tasks',
