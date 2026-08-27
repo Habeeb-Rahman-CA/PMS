@@ -22,19 +22,34 @@ export class ProjectService {
     if (cached) {
       try {
         const data = JSON.parse(cached);
-        if (data.projects && Array.isArray(data.projects)) {
+        if (data.projects && Array.isArray(data.projects) && data.projects.length > 0) {
           this.projects.set(data.projects);
-          if (data.projects.length > 0) {
-            this.activeProject.set(data.projects[0]);
+          this.activeProject.set(data.projects[0]);
+          if (data.activities && Array.isArray(data.activities)) {
+            this.activities.set(data.activities);
           }
-        }
-        if (data.activities && Array.isArray(data.activities)) {
-          this.activities.set(data.activities);
+          return;
         }
       } catch (e) {
         console.error('Failed to load local cache', e);
       }
     }
+
+    // Seed default demo project
+    const defaultProj: Project = {
+      id: 'proj-default-1',
+      name: 'DevFlow Core Platform',
+      slug: 'devflow-core-platform',
+      description: 'Main product development board featuring full Kanban workflow tracking.',
+      status: 'active',
+      labels: ['core', 'frontend', 'backend', 'v1.0'],
+      color: '#06b6d4',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    this.projects.set([defaultProj]);
+    this.activeProject.set(defaultProj);
+    this.saveToStorage();
   }
 
   private saveToStorage() {

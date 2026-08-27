@@ -52,10 +52,31 @@ export class WorkflowService {
   }
 
   getWorkflowsForProject(projectId: string): Workflow[] {
-    if (!projectId || projectId === 'all') return [];
-    return this.workflows()
+    if (!projectId) return [];
+    
+    if (projectId === 'all') {
+      return [
+        { id: 'wf-backlog-all', project_id: 'all', name: 'Backlog', color: '#64748b', position: 0, created_at: '' },
+        { id: 'wf-todo-all', project_id: 'all', name: 'To Do', color: '#3b82f6', position: 1, created_at: '' },
+        { id: 'wf-in-progress-all', project_id: 'all', name: 'In Progress', color: '#eab308', position: 2, created_at: '' },
+        { id: 'wf-in-review-all', project_id: 'all', name: 'In Review', color: '#a855f7', position: 3, created_at: '' },
+        { id: 'wf-done-all', project_id: 'all', name: 'Done', color: '#22c55e', position: 4, created_at: '' }
+      ];
+    }
+
+    const custom = this.workflows()
       .filter(w => w.project_id === projectId)
       .sort((a, b) => a.position - b.position);
+
+    if (custom.length > 0) return custom;
+
+    return [
+      { id: `wf-backlog-${projectId}`, project_id: projectId, name: 'Backlog', color: '#64748b', position: 0, created_at: '' },
+      { id: `wf-todo-${projectId}`, project_id: projectId, name: 'To Do', color: '#3b82f6', position: 1, created_at: '' },
+      { id: `wf-in-progress-${projectId}`, project_id: projectId, name: 'In Progress', color: '#eab308', position: 2, created_at: '' },
+      { id: `wf-in-review-${projectId}`, project_id: projectId, name: 'In Review', color: '#a855f7', position: 3, created_at: '' },
+      { id: `wf-done-${projectId}`, project_id: projectId, name: 'Done', color: '#22c55e', position: 4, created_at: '' }
+    ];
   }
 
   async createWorkflow(projectId: string, name: string, color: string = '#06b6d4'): Promise<Workflow> {

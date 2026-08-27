@@ -1,6 +1,7 @@
 import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DragDropModule, CdkDragDrop } from '@angular/cdk/drag-drop';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
 import { WorkflowService } from '../../core/services/workflow.service';
@@ -12,7 +13,14 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
 @Component({
   selector: 'app-tasks',
   standalone: true,
-  imports: [CommonModule, FormsModule, TaskModalComponent, TaskDetailModalComponent, WorkflowModalComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    DragDropModule,
+    TaskModalComponent,
+    TaskDetailModalComponent,
+    WorkflowModalComponent
+  ],
   template: `
     <div class="tasks-page-container">
       <!-- Header Banner -->
@@ -20,9 +28,9 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
         <div class="header-main">
           <div>
             <h2>
-              <i class="fi fi-rr-list-check text-cyan"></i> Task & Issue Manager
+              <i class="fi fi-rr-list-check text-cyan"></i> Interactive Kanban Board
             </h2>
-            <p class="subtitle">Organize stories, bugs, tasks, and epics across status workflows</p>
+            <p class="subtitle">Drag & drop tasks between status columns with real-time status updates</p>
           </div>
 
           <div class="header-actions">
@@ -42,55 +50,105 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
           </div>
         </div>
 
-        <!-- Filter Bar -->
+        <!-- Filter Toolbar -->
         <div class="filter-bar">
           <div class="filters-left">
-            <!-- Project Selector Filter -->
-            <select
-              class="form-select filter-select"
-              [ngModel]="selectedProjectId()"
-              (ngModelChange)="selectedProjectId.set($event)"
-            >
-              <option value="all" disabled>Select a Project...</option>
-              @for (p of projectService.projects(); track p.id) {
-                <option [value]="p.id">{{ p.name }}</option>
-              }
-            </select>
+            <!-- Project Filter -->
+            <div class="filter-group">
+              <label class="filter-label">Project</label>
+              <select
+                class="form-select filter-select"
+                [ngModel]="selectedProjectId()"
+                (ngModelChange)="onProjectChange($event)"
+              >
+                <option value="all">All Projects</option>
+                @for (p of projectService.projects(); track p.id) {
+                  <option [value]="p.id">{{ p.name }}</option>
+                }
+              </select>
+            </div>
 
-            <!-- Type Filter -->
-            <select
-              class="form-select filter-select"
-              [ngModel]="selectedType()"
-              (ngModelChange)="selectedType.set($event)"
-            >
-              <option value="all">All Issue Types</option>
-              <option value="story">Story</option>
-              <option value="bug">Bug</option>
-              <option value="task">Task</option>
-              <option value="epic">Epic</option>
-            </select>
+            <!-- Issue Type Filter -->
+            <div class="filter-group">
+              <label class="filter-label">Issue Type</label>
+              <select
+                class="form-select filter-select"
+                [ngModel]="selectedType()"
+                (ngModelChange)="selectedType.set($event)"
+              >
+                <option value="all">All Types</option>
+                <option value="story">Story</option>
+                <option value="bug">Bug</option>
+                <option value="task">Task</option>
+                <option value="epic">Epic</option>
+              </select>
+            </div>
 
             <!-- Priority Filter -->
-            <select
-              class="form-select filter-select"
-              [ngModel]="selectedPriority()"
-              (ngModelChange)="selectedPriority.set($event)"
-            >
-              <option value="all">All Priorities</option>
-              <option value="urgent">Urgent</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
+            <div class="filter-group">
+              <label class="filter-label">Priority</label>
+              <select
+                class="form-select filter-select"
+                [ngModel]="selectedPriority()"
+                (ngModelChange)="selectedPriority.set($event)"
+              >
+                <option value="all">All Priorities</option>
+                <option value="urgent">Urgent</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+
+            <!-- Label Filter -->
+            <div class="filter-group">
+              <label class="filter-label">Label</label>
+              <select
+                class="form-select filter-select"
+                [ngModel]="selectedLabel()"
+                (ngModelChange)="selectedLabel.set($event)"
+              >
+                <option value="all">All Labels</option>
+                @for (lbl of availableLabels(); track lbl) {
+                  <option [value]="lbl">#{{ lbl }}</option>
+                }
+              </select>
+            </div>
+
+            <!-- Due Date Filter -->
+            <div class="filter-group">
+              <label class="filter-label">Due Date</label>
+              <select
+                class="form-select filter-select"
+                [ngModel]="selectedDueDateFilter()"
+                (ngModelChange)="selectedDueDateFilter.set($event)"
+              >
+                <option value="all">All Dates</option>
+                <option value="overdue">Overdue</option>
+                <option value="today">Due Today</option>
+                <option value="week">Due This Week</option>
+                <option value="has_date">Has Due Date</option>
+                <option value="no_date">No Due Date</option>
+              </select>
+            </div>
+
+            @if (hasActiveFilters()) {
+              <div class="filter-group reset-group">
+                <label class="filter-label">&nbsp;</label>
+                <button class="btn btn-ghost btn-sm reset-btn" (click)="resetFilters()">
+                  <i class="fi fi-rr-refresh"></i> Clear Filters
+                </button>
+              </div>
+            }
           </div>
 
-          <!-- Search Input -->
+          <!-- Search Box -->
           <div class="search-box">
             <i class="fi fi-rr-search search-icon"></i>
             <input
               type="text"
               class="form-input search-input"
-              placeholder="Search tasks, labels..."
+              placeholder="Search title, description..."
               [ngModel]="searchQuery()"
               (ngModelChange)="searchQuery.set($event)"
             />
@@ -98,26 +156,21 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
         </div>
       </div>
 
-      <!-- Kanban Workflow Board -->
-      @if (selectedProjectId() === 'all') {
-        <div class="empty-board glass-panel">
-          <i class="fi fi-rr-folder empty-board-icon"></i>
-          <h3>Please select a project</h3>
-          <p>Select a project from the dropdown above to view and configure its status workflow.</p>
-        </div>
-      } @else if (activeColumns().length === 0) {
+      <!-- Kanban Board -->
+      @if (activeColumns().length === 0) {
         <div class="empty-board glass-panel">
           <i class="fi fi-rr-settings-sliders empty-board-icon"></i>
           <h3>No Status Workflow Configured</h3>
           <p>You haven't created any status columns for this project yet.</p>
           <button class="btn btn-primary" (click)="openWorkflowModal()">
-            <i class="fi fi-rr-plus"></i> Configure Workflow Columns
+            <i class="fi fi-rr-plus"></i> Add Status Columns
           </button>
         </div>
       } @else {
-        <div class="kanban-board">
+        <div class="kanban-board" cdkDropListGroup>
           @for (col of activeColumns(); track col.id) {
             <div class="kanban-column glass-panel">
+              <!-- Column Header -->
               <div class="column-header">
                 <div class="column-title">
                   <span class="col-dot" [style.background-color]="col.color || '#06b6d4'"></span>
@@ -127,53 +180,71 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
                 <button
                   class="btn btn-ghost btn-sm btn-icon"
                   (click)="openCreateModal(col.name)"
-                  title="Add Issue to {{ col.name }}"
+                  title="Add Task to {{ col.name }}"
                 >
                   <i class="fi fi-rr-plus"></i>
                 </button>
               </div>
 
-              <div class="column-cards">
-                @if (getColumnTasks(col.name).length === 0) {
-                  <div class="empty-column">No issues in {{ col.name }}</div>
-                } @else {
+              <!-- CDK Drop List Container -->
+              <div
+                class="column-cards"
+                cdkDropList
+                [cdkDropListData]="getColumnTasks(col.name)"
+                (cdkDropListDropped)="drop($event, col)"
+              >
                   @for (t of getColumnTasks(col.name); track t.id) {
                     <div
                       class="task-card glass-panel"
+                      cdkDrag
+                      [cdkDragData]="t"
                       (click)="openDetailModal(t)"
                     >
+                      <!-- Card Top Row: Issue Type & Priority -->
                       <div class="card-top">
-                        <span class="badge" [class]="'badge-' + t.type">
-                          <i [class]="getTypeIcon(t.type)"></i> {{ t.type }}
-                        </span>
-                        <span class="badge" [class]="'badge-' + t.priority">
-                          {{ t.priority }}
-                        </span>
+                        <div class="type-badge-wrap">
+                          <span class="badge" [class]="'badge-' + t.type">
+                            <i [class]="getTypeIcon(t.type)"></i> {{ t.type }}
+                          </span>
+                          <span class="badge" [class]="'badge-' + t.priority">
+                            {{ t.priority }}
+                          </span>
+                        </div>
+                        <i class="fi fi-rr-grip-dots-vertical drag-grip" title="Drag to move"></i>
                       </div>
 
+                      <!-- Card Title -->
                       <h4 class="card-title">{{ t.title }}</h4>
 
+                      <!-- Card Labels -->
                       @if (t.labels && t.labels.length > 0) {
                         <div class="card-labels">
                           @for (lbl of t.labels; track lbl) {
-                            <span class="label-chip">#{{ lbl }}</span>
+                            <span
+                              class="label-chip"
+                              [class.active-label]="selectedLabel() === lbl"
+                              (click)="$event.stopPropagation(); selectedLabel.set(selectedLabel() === lbl ? 'all' : lbl)"
+                              title="Filter by #{{ lbl }}"
+                            >
+                              #{{ lbl }}
+                            </span>
                           }
                         </div>
                       }
 
+                      <!-- Card Footer: Assignee & Due Date -->
                       <div class="card-bottom">
                         <span class="assignee">
                           <i class="fi fi-rr-user"></i> {{ t.assignee || 'Self' }}
                         </span>
 
                         @if (t.due_date) {
-                          <span class="due-date">
+                          <span class="due-date" [class.overdue]="isOverdue(t.due_date)">
                             <i class="fi fi-rr-calendar"></i> {{ t.due_date }}
                           </span>
                         }
                       </div>
                     </div>
-                  }
                 }
               </div>
             </div>
@@ -185,13 +256,13 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
       @if (showCreateModal()) {
         <app-task-modal
           [taskToEdit]="editingTask()"
-          [defaultProjectId]="selectedProjectId() === 'all' ? '' : selectedProjectId()"
+          [defaultProjectId]="selectedProjectId() === 'all' ? (projectService.projects()[0]?.id || '') : selectedProjectId()"
           [defaultStatus]="createDefaultStatus()"
           (close)="closeCreateModal()"
         ></app-task-modal>
       }
 
-      <!-- Detail Page/Modal with Comments -->
+      <!-- Detail Modal -->
       @if (activeDetailTask(); as detailTask) {
         <app-task-detail-modal
           [task]="detailTask"
@@ -251,7 +322,7 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
     .filter-bar {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-end;
       padding-top: 1rem;
       border-top: 1px solid var(--border-subtle);
       flex-wrap: wrap;
@@ -259,16 +330,37 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
     }
     .filters-left {
       display: flex;
-      gap: 0.75rem;
+      gap: 0.85rem;
       flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .filter-label {
+      font-size: 0.7rem;
+      color: var(--text-subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
     .filter-select {
-      width: 160px;
-      padding: 0.4rem 0.65rem;
+      width: 145px;
+      padding: 0.35rem 0.6rem;
       font-size: 0.825rem;
+    }
+    .reset-btn {
+      padding: 0.35rem 0.6rem;
+      font-size: 0.8rem;
+      color: var(--accent-rose);
+    }
+    .reset-btn:hover {
+      background: rgba(244, 63, 94, 0.1);
     }
     .search-box {
       position: relative;
+      align-self: flex-end;
     }
     .search-icon {
       position: absolute;
@@ -307,17 +399,16 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
     }
     .kanban-board {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 1.25rem;
-      overflow-x: auto;
-      padding-bottom: 1rem;
+      align-items: start;
     }
     .kanban-column {
       display: flex;
       flex-direction: column;
       gap: 1rem;
       padding: 1rem;
-      min-height: 500px;
+      min-height: 580px;
       background: var(--bg-surface);
     }
     .column-header {
@@ -353,14 +444,23 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
       flex-direction: column;
       gap: 0.85rem;
       flex: 1;
+      min-height: 480px;
     }
     .empty-column {
-      padding: 2rem 1rem;
+      padding: 3rem 1rem;
       text-align: center;
       font-size: 0.8rem;
       color: var(--text-subtle);
       border: 1px dashed var(--border-subtle);
       border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .empty-column i {
+      font-size: 1.25rem;
+      opacity: 0.5;
     }
     .task-card {
       padding: 1rem;
@@ -368,18 +468,32 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
       flex-direction: column;
       gap: 0.65rem;
       background: var(--bg-card);
-      cursor: pointer;
+      cursor: grab;
       transition: var(--transition);
+      user-select: none;
+    }
+    .task-card:active {
+      cursor: grabbing;
     }
     .task-card:hover {
       border-color: var(--border-active);
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
     }
     .card-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+    .type-badge-wrap {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+    }
+    .drag-grip {
+      color: var(--text-subtle);
+      font-size: 0.85rem;
+      opacity: 0.5;
     }
     .card-title {
       font-size: 0.9rem;
@@ -398,6 +512,12 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
       background: rgba(6, 182, 212, 0.1);
       padding: 0.1rem 0.45rem;
       border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .label-chip:hover, .label-chip.active-label {
+      background: var(--accent-cyan);
+      color: #ffffff;
     }
     .card-bottom {
       display: flex;
@@ -408,12 +528,38 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
       padding-top: 0.4rem;
       border-top: 1px solid rgba(255, 255, 255, 0.05);
     }
+    .due-date.overdue {
+      color: #ef4444;
+      font-weight: 600;
+    }
+    /* CDK Drag & Drop styles */
+    .cdk-drag-preview {
+      box-sizing: border-box;
+      border-radius: var(--radius-md);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
+      background: var(--bg-card);
+      padding: 1rem;
+      border: 1px solid var(--accent-cyan);
+    }
+    .cdk-drag-placeholder {
+      opacity: 0.25;
+      border: 2px dashed var(--accent-cyan);
+      border-radius: var(--radius-md);
+    }
+    .cdk-drag-animating {
+      transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+    }
+    .column-cards.cdk-drop-list-dragging .task-card:not(.cdk-drag-placeholder) {
+      transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+    }
   `]
 })
 export class TasksComponent {
   selectedProjectId = signal<string>('all');
   selectedType = signal<string>('all');
   selectedPriority = signal<string>('all');
+  selectedLabel = signal<string>('all');
+  selectedDueDateFilter = signal<string>('all');
   searchQuery = signal<string>('');
 
   showCreateModal = signal<boolean>(false);
@@ -427,15 +573,42 @@ export class TasksComponent {
     public projectService: ProjectService,
     public workflowService: WorkflowService
   ) {
-    // Automatically pre-select first project if available
     const projList = this.projectService.projects();
     if (projList.length > 0) {
       this.selectedProjectId.set(projList[0].id);
     }
   }
 
+  onProjectChange(projId: string) {
+    this.selectedProjectId.set(projId);
+  }
+
   activeColumns = computed<Workflow[]>(() => {
     return this.workflowService.getWorkflowsForProject(this.selectedProjectId());
+  });
+
+  availableLabels = computed<string[]>(() => {
+    const list = this.taskService.tasks();
+    const projId = this.selectedProjectId();
+    const set = new Set<string>();
+    list.forEach(t => {
+      if (projId === 'all' || t.project_id === projId) {
+        t.labels?.forEach(l => {
+          if (l.trim()) set.add(l.trim().toLowerCase());
+        });
+      }
+    });
+    return Array.from(set).sort();
+  });
+
+  hasActiveFilters = computed(() => {
+    return (
+      this.selectedType() !== 'all' ||
+      this.selectedPriority() !== 'all' ||
+      this.selectedLabel() !== 'all' ||
+      this.selectedDueDateFilter() !== 'all' ||
+      this.searchQuery().trim() !== ''
+    );
   });
 
   filteredTasks = computed(() => {
@@ -443,18 +616,49 @@ export class TasksComponent {
     const projId = this.selectedProjectId();
     const type = this.selectedType();
     const priority = this.selectedPriority();
+    const label = this.selectedLabel().toLowerCase();
+    const dueFilter = this.selectedDueDateFilter();
     const q = this.searchQuery().toLowerCase().trim();
+
+    const todayStr = new Date().toISOString().split('T')[0];
 
     return list.filter(t => {
       if (projId !== 'all' && t.project_id !== projId) return false;
       if (type !== 'all' && t.type !== type) return false;
       if (priority !== 'all' && t.priority !== priority) return false;
+
+      // Label filter
+      if (label !== 'all') {
+        if (!t.labels || !t.labels.some(l => l.toLowerCase() === label)) return false;
+      }
+
+      // Due Date Filter logic
+      if (dueFilter !== 'all') {
+        if (dueFilter === 'has_date' && !t.due_date) return false;
+        if (dueFilter === 'no_date' && t.due_date) return false;
+        if (dueFilter === 'overdue') {
+          if (!t.due_date || t.due_date >= todayStr || t.completed) return false;
+        }
+        if (dueFilter === 'today') {
+          if (!t.due_date || t.due_date !== todayStr) return false;
+        }
+        if (dueFilter === 'week') {
+          if (!t.due_date) return false;
+          const taskDate = new Date(t.due_date).getTime();
+          const now = new Date().getTime();
+          const weekFromNow = now + 7 * 86400000;
+          if (taskDate < now - 86400000 || taskDate > weekFromNow) return false;
+        }
+      }
+
+      // Text search
       if (q) {
         const matchesTitle = t.title.toLowerCase().includes(q);
         const matchesDesc = t.description?.toLowerCase().includes(q);
         const matchesLabel = t.labels?.some(l => l.toLowerCase().includes(q));
         if (!matchesTitle && !matchesDesc && !matchesLabel) return false;
       }
+
       return true;
     });
   });
@@ -476,6 +680,30 @@ export class TasksComponent {
       case 'epic': return 'fi fi-rr-rocket-takeoff';
       default: return 'fi fi-rr-checkbox';
     }
+  }
+
+  isOverdue(dueDate?: string): boolean {
+    if (!dueDate) return false;
+    const todayStr = new Date().toISOString().split('T')[0];
+    return dueDate < todayStr;
+  }
+
+  async drop(event: CdkDragDrop<Task[]>, targetColumn: Workflow) {
+    const task: Task = event.item.data;
+    if (task && task.status !== targetColumn.name) {
+      await this.taskService.updateTask(task.id, {
+        status: targetColumn.name,
+        workflow_id: targetColumn.id
+      });
+    }
+  }
+
+  resetFilters() {
+    this.selectedType.set('all');
+    this.selectedPriority.set('all');
+    this.selectedLabel.set('all');
+    this.selectedDueDateFilter.set('all');
+    this.searchQuery.set('');
   }
 
   openCreateModal(defaultStatus: string = '') {

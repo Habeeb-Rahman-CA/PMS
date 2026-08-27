@@ -20,16 +20,92 @@ export class TaskService {
     if (cached) {
       try {
         const data = JSON.parse(cached);
-        if (data.tasks && Array.isArray(data.tasks)) {
+        if (data.tasks && Array.isArray(data.tasks) && data.tasks.length > 0) {
           this.tasks.set(data.tasks);
-        }
-        if (data.comments) {
-          this.taskComments.set(data.comments);
+          if (data.comments) {
+            this.taskComments.set(data.comments);
+          }
+          return;
         }
       } catch (e) {
         console.error('Failed to parse local tasks cache', e);
       }
     }
+
+    // Seed realistic demo tasks demonstrating issue types, priorities, labels, and status columns
+    const initialTasks: Task[] = [
+      {
+        id: 'task-demo-1',
+        project_id: 'proj-default-1',
+        title: 'Architect Supabase Database Schema & RLS Security Policies',
+        description: 'Define PostgreSQL relational tables for projects, workflows, tasks, and task comments with strict row level security.',
+        type: 'epic',
+        status: 'Done',
+        priority: 'urgent',
+        labels: ['database', 'security', 'backend'],
+        assignee: 'Alex',
+        due_date: '2026-08-25',
+        position: 0,
+        is_next: false,
+        completed: true,
+        created_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+        updated_at: new Date(Date.now() - 86400000 * 5).toISOString()
+      },
+      {
+        id: 'task-demo-2',
+        project_id: 'proj-default-1',
+        title: 'Implement Angular CDK Drag and Drop Kanban Board',
+        description: 'Enable smooth drag and drop between task status columns with real-time signal updates and persistent caching.',
+        type: 'story',
+        status: 'In Progress',
+        priority: 'high',
+        labels: ['frontend', 'ui', 'kanban'],
+        assignee: 'Self',
+        due_date: '2026-08-30',
+        position: 0,
+        is_next: true,
+        completed: false,
+        created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+        updated_at: new Date(Date.now() - 86400000 * 3).toISOString()
+      },
+      {
+        id: 'task-demo-3',
+        project_id: 'proj-default-1',
+        title: 'Fix issue type filter dropdown z-index positioning in dark mode',
+        description: 'Ensure filter select inputs do not overflow or get clipped in responsive viewports.',
+        type: 'bug',
+        status: 'To Do',
+        priority: 'medium',
+        labels: ['bug', 'css', 'ui'],
+        assignee: 'Sarah',
+        due_date: '2026-09-02',
+        position: 0,
+        is_next: false,
+        completed: false,
+        created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+        updated_at: new Date(Date.now() - 86400000 * 2).toISOString()
+      },
+      {
+        id: 'task-demo-4',
+        project_id: 'proj-default-1',
+        title: 'Setup Cloudflare Pages Deployment & Edge Caching',
+        description: 'Configure automated git deployments and edge headers for lightning fast PWA load times.',
+        type: 'task',
+        status: 'Backlog',
+        priority: 'low',
+        labels: ['devops', 'cloudflare'],
+        assignee: 'DevOps',
+        due_date: '2026-09-10',
+        position: 0,
+        is_next: false,
+        completed: false,
+        created_at: new Date(Date.now() - 86400000 * 1).toISOString(),
+        updated_at: new Date(Date.now() - 86400000 * 1).toISOString()
+      }
+    ];
+
+    this.tasks.set(initialTasks);
+    this.saveToStorage();
   }
 
   private saveToStorage() {
