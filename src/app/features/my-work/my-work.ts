@@ -23,10 +23,7 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       <div class="my-work-header glass-panel">
         <div class="header-main">
           <div class="header-title">
-            <h2>
-              <i class="fi fi-rr-user-check text-cyan"></i> My Work Workspace
-            </h2>
-            <p class="subtitle">Global task hub across all developer projects</p>
+            <h2>My Work</h2>
           </div>
 
           <div class="header-actions">
@@ -36,7 +33,7 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
               [ngModel]="selectedProjectId()"
               (ngModelChange)="selectedProjectId.set($event)"
             >
-              <option value="all">⚡ All Projects View</option>
+              <option value="all">All Projects</option>
               @for (p of projectService.projects(); track p.id) {
                 <option [value]="p.id">{{ p.name }}</option>
               }

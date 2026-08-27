@@ -1,36 +1,25 @@
 <div class="app-shell">
   <!-- Desktop / Main Header Navbar -->
-  <header class="app-header glass-panel">
+  <header class="app-header">
     <div class="header-left">
       <a routerLink="/" class="brand-link" (click)="closeMobileMenu()">
-        <div class="brand-icon">
-          <i class="fi fi-sr-bolt"></i>
-        </div>
-        <span class="brand-title">Dev<span class="highlight">Flow</span></span>
+        <span class="brand-title">DevFlow</span>
       </a>
 
       <nav class="desktop-nav">
         <a routerLink="/projects" routerLinkActive="active" class="nav-link">
-          <i class="fi fi-rr-dashboard"></i>
-          <span>Dashboard</span>
+          <span>Projects</span>
         </a>
         <a routerLink="/my-work" routerLinkActive="active" class="nav-link">
-          <i class="fi fi-rr-user-check"></i>
           <span>My Work</span>
         </a>
         <a routerLink="/tasks" routerLinkActive="active" class="nav-link">
-          <i class="fi fi-rr-list-check"></i>
-          <span>Kanban Board</span>
+          <span>Tasks</span>
         </a>
       </nav>
     </div>
 
     <div class="header-right">
-      <div class="status-indicator" title="Cloudflare Pages & Supabase Stack">
-        <span class="status-dot"></span>
-        <span class="status-text">Cloudflare Edge</span>
-      </div>
-
       <button class="mobile-toggle-btn" (click)="toggleMobileMenu()" aria-label="Toggle navigation menu">
         <i [class]="mobileMenuOpen() ? 'fi fi-rr-cross' : 'fi fi-rr-menu-burger'"></i>
       </button>
@@ -42,12 +31,7 @@
     <div class="mobile-drawer-overlay" (click)="closeMobileMenu()">
       <nav class="mobile-drawer" (click)="$event.stopPropagation()">
         <div class="drawer-header">
-          <div class="brand-link">
-            <div class="brand-icon">
-              <i class="fi fi-sr-bolt"></i>
-            </div>
-            <span class="brand-title">DevFlow</span>
-          </div>
+          <span class="brand-title">DevFlow</span>
           <button class="btn-close" (click)="closeMobileMenu()">
             <i class="fi fi-rr-cross"></i>
           </button>
@@ -55,21 +39,14 @@
 
         <div class="drawer-links">
           <a routerLink="/projects" routerLinkActive="active" class="drawer-link" (click)="closeMobileMenu()">
-            <i class="fi fi-rr-dashboard"></i>
-            <span>Dashboard</span>
+            <span>Projects</span>
           </a>
           <a routerLink="/my-work" routerLinkActive="active" class="drawer-link" (click)="closeMobileMenu()">
-            <i class="fi fi-rr-user-check"></i>
             <span>My Work</span>
           </a>
           <a routerLink="/tasks" routerLinkActive="active" class="drawer-link" (click)="closeMobileMenu()">
-            <i class="fi fi-rr-list-check"></i>
-            <span>Kanban Board</span>
+            <span>Tasks</span>
           </a>
-        </div>
-
-        <div class="drawer-footer">
-          <span class="edge-tag"><i class="fi fi-rr-cloud"></i> Deployed on Cloudflare Pages</span>
         </div>
       </nav>
     </div>
@@ -80,17 +57,14 @@
     <router-outlet />
   </main>
 
-  <!-- Minimalist Developer Shell Footer -->
+  <!-- Clean Minimalist Footer -->
   <footer class="app-footer">
     <div class="footer-content">
       <div class="footer-left">
-        <i class="fi fi-sr-bolt text-cyan"></i>
-        <span>DevFlow Personal Workspace</span>
+        <span>DevFlow</span>
       </div>
       <div class="footer-right">
-        <span><i class="fi fi-rr-cloud"></i> Cloudflare Pages</span>
-        <span class="separator">•</span>
-        <span><i class="fi fi-rr-database"></i> Supabase PostgreSQL</span>
+        <span>Personal Workspace</span>
       </div>
     </div>
   </footer>

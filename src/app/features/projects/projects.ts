@@ -26,14 +26,14 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       <!-- 1. Header Bar: Selector & Actions -->
       <div class="dash-header glass-panel">
         <div class="header-left">
-          <h2><i class="fi fi-rr-dashboard text-cyan"></i> Project Dashboard</h2>
+          <h2>Dashboard</h2>
           
           <select
             class="form-select project-select"
             [ngModel]="selectedProjectId()"
             (ngModelChange)="onProjectSelect($event)"
           >
-            <option value="all">⚡ All Projects</option>
+            <option value="all">All Projects</option>
             @for (p of projectService.projects(); track p.id) {
               <option [value]="p.id">{{ p.name }}</option>
             }

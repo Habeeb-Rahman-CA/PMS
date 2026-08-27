@@ -27,16 +27,13 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
       <div class="tasks-header glass-panel">
         <div class="header-main">
           <div>
-            <h2>
-              <i class="fi fi-rr-list-check text-cyan"></i> Interactive Kanban Board
-            </h2>
-            <p class="subtitle">Drag & drop tasks between status columns with real-time status updates</p>
+            <h2>Tasks</h2>
           </div>
 
           <div class="header-actions">
             @if (selectedProjectId() !== 'all') {
               <button class="btn btn-secondary" (click)="openWorkflowModal()">
-                <i class="fi fi-rr-settings-sliders"></i> Configure Workflow
+                <i class="fi fi-rr-settings-sliders"></i> Workflow
               </button>
             }
 
@@ -45,7 +42,7 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
               [disabled]="activeColumns().length === 0"
               (click)="openCreateModal()"
             >
-              <i class="fi fi-rr-plus"></i> Create Issue
+              <i class="fi fi-rr-plus"></i> New Task
             </button>
           </div>
         </div>
