@@ -289,4 +289,57 @@ export class TaskService {
 
     return newComm;
   }
+
+  async updateComment(commentId: string, taskId: string, newContent: string): Promise<TaskComment | null> {
+    const updatedAt = new Date().toISOString();
+    let updatedComment: TaskComment | null = null;
+
+    this.taskComments.update(map => {
+      const list = map[taskId] || [];
+      const newList: TaskComment[] = list.map(c => {
+        if (c.id === commentId) {
+          const updated: TaskComment = { ...c, content: newContent, updated_at: updatedAt };
+          updatedComment = updated;
+          return updated;
+        }
+        return c;
+      });
+      return { ...map, [taskId]: newList };
+    });
+
+    this.saveToStorage();
+
+    try {
+      await this.supabaseService.supabase
+        .from('task_comments')
+        .update({ content: newContent, updated_at: updatedAt })
+        .eq('id', commentId);
+    } catch (e) {
+      console.warn('Supabase comment update warning:', e);
+    }
+
+    return updatedComment;
+  }
+
+  async deleteComment(commentId: string, taskId: string): Promise<void> {
+    this.taskComments.update(map => {
+      const list = map[taskId] || [];
+      return {
+        ...map,
+        [taskId]: list.filter(c => c.id !== commentId)
+      };
+    });
+
+    this.saveToStorage();
+
+    try {
+      await this.supabaseService.supabase
+        .from('task_comments')
+        .delete()
+        .eq('id', commentId);
+    } catch (e) {
+      console.warn('Supabase comment delete warning:', e);
+    }
+  }
 }
+

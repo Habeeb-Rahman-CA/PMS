@@ -48,7 +48,7 @@ import { Task, TaskComment, Workflow } from '../../core/models/project.model';
             @if (task.labels && task.labels.length > 0) {
               <div class="labels-box">
                 <h4 class="section-heading"><i class="fi fi-rr-tags"></i> Labels</h4>
-                <div class="chips">
+                <div class="chips font-mono">
                   @for (l of task.labels; track l) {
                     <span class="chip">#{{ l }}</span>
                   }
@@ -58,15 +58,19 @@ import { Task, TaskComment, Workflow } from '../../core/models/project.model';
 
             <!-- Comments & Discussion Section -->
             <div class="comments-section">
-              <h3 class="comments-heading">
-                <i class="fi fi-rr-comment-alt-middle"></i> Activity & Comments
-              </h3>
+              <div class="comments-header">
+                <h3 class="comments-heading">
+                  <i class="fi fi-rr-comment-alt-middle text-cyan"></i> Task Comments
+                  <span class="comment-count-badge">{{ comments().length }}</span>
+                </h3>
+              </div>
 
+              <!-- New Comment Input Box -->
               <div class="add-comment-box">
                 <textarea
-                  class="form-textarea"
+                  class="form-textarea comment-input"
                   rows="2"
-                  placeholder="Add a comment or discussion note..."
+                  placeholder="Write a comment or update..."
                   [(ngModel)]="newCommentText"
                 ></textarea>
                 <div class="comment-btn-row">
@@ -80,22 +84,82 @@ import { Task, TaskComment, Workflow } from '../../core/models/project.model';
                 </div>
               </div>
 
-              <!-- Comments List -->
+              <!-- Lightweight Comments List -->
               <div class="comments-list">
                 @if (comments().length === 0) {
-                  <p class="no-comments">No comments yet. Start the discussion above!</p>
+                  <div class="empty-comments">
+                    <i class="fi fi-rr-comment-slash"></i>
+                    <span>No comments yet. Post the first update above!</span>
+                  </div>
                 } @else {
                   @for (c of comments(); track c.id) {
-                    <div class="comment-item">
+                    <div class="comment-item glass-panel">
                       <div class="comment-avatar">
                         <i class="fi fi-rr-user"></i>
                       </div>
+
                       <div class="comment-content">
+                        <!-- Comment Header & Actions -->
                         <div class="comment-meta">
-                          <span class="author">{{ c.author_name }}</span>
-                          <span class="time">{{ formatDate(c.created_at) }}</span>
+                          <div class="meta-left">
+                            <span class="author">{{ c.author_name }}</span>
+                            <span class="time" [title]="c.created_at">
+                              <i class="fi fi-rr-clock"></i> {{ formatDate(c.created_at) }}
+                              @if (c.updated_at) {
+                                <span class="edited-tag">(edited)</span>
+                              }
+                            </span>
+                          </div>
+
+                          <!-- Actions: Edit & Delete -->
+                          <div class="comment-actions">
+                            @if (editingCommentId() !== c.id) {
+                              <button
+                                class="btn-action-icon"
+                                (click)="startEditingComment(c)"
+                                title="Edit comment"
+                              >
+                                <i class="fi fi-rr-edit"></i>
+                              </button>
+
+                              <button
+                                class="btn-action-icon text-rose"
+                                (click)="confirmDeleteComment(c.id)"
+                                title="Delete comment"
+                              >
+                                <i class="fi fi-rr-trash"></i>
+                              </button>
+                            }
+                          </div>
                         </div>
-                        <p class="text">{{ c.content }}</p>
+
+                        <!-- Inline Edit or Read Mode -->
+                        @if (editingCommentId() === c.id) {
+                          <div class="inline-edit-box">
+                            <textarea
+                              class="form-textarea edit-textarea"
+                              rows="2"
+                              [(ngModel)]="editText"
+                            ></textarea>
+                            <div class="edit-btn-row">
+                              <button
+                                class="btn btn-secondary btn-xs"
+                                (click)="cancelCommentEdit()"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                class="btn btn-primary btn-xs"
+                                [disabled]="!editText.trim()"
+                                (click)="saveCommentEdit(c.id)"
+                              >
+                                Save Changes
+                              </button>
+                            </div>
+                          </div>
+                        } @else {
+                          <p class="text">{{ c.content }}</p>
+                        }
                       </div>
                     </div>
                   }
@@ -233,16 +297,32 @@ import { Task, TaskComment, Workflow } from '../../core/models/project.model';
       flex-direction: column;
       gap: 1rem;
     }
+    .comments-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
     .comments-heading {
-      font-size: 1rem;
+      font-size: 0.95rem;
       display: flex;
       align-items: center;
       gap: 0.5rem;
+    }
+    .comment-count-badge {
+      font-size: 0.725rem;
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--accent-cyan);
+      padding: 0.1rem 0.45rem;
+      border-radius: var(--radius-full);
     }
     .add-comment-box {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
+    }
+    .comment-input {
+      font-size: 0.85rem;
+      resize: vertical;
     }
     .comment-btn-row {
       display: flex;
@@ -251,41 +331,54 @@ import { Task, TaskComment, Workflow } from '../../core/models/project.model';
     .comments-list {
       display: flex;
       flex-direction: column;
-      gap: 0.85rem;
+      gap: 0.75rem;
     }
-    .no-comments {
-      font-size: 0.825rem;
+    .empty-comments {
+      padding: 1.5rem 1rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
       color: var(--text-subtle);
-      font-style: italic;
+      font-size: 0.825rem;
+      border: 1px dashed var(--border-subtle);
+      border-radius: var(--radius-md);
     }
     .comment-item {
       display: flex;
       gap: 0.75rem;
+      padding: 0.85rem;
       background: var(--bg-surface);
-      padding: 0.75rem;
-      border-radius: var(--radius-md);
-      border: 1px solid var(--border-subtle);
     }
     .comment-avatar {
-      width: 30px;
-      height: 30px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
-      background: var(--bg-surface-hover);
+      background: rgba(6, 182, 212, 0.15);
       display: flex;
       align-items: center;
       justify-content: center;
       color: var(--accent-cyan);
+      font-size: 0.85rem;
+      flex-shrink: 0;
     }
     .comment-content {
       display: flex;
       flex-direction: column;
-      gap: 0.2rem;
+      gap: 0.35rem;
       flex: 1;
     }
     .comment-meta {
       display: flex;
       justify-content: space-between;
-      font-size: 0.75rem;
+      align-items: center;
+      font-size: 0.775rem;
+    }
+    .meta-left {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
     }
     .author {
       font-weight: 600;
@@ -293,11 +386,63 @@ import { Task, TaskComment, Workflow } from '../../core/models/project.model';
     }
     .time {
       color: var(--text-subtle);
+      font-size: 0.725rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
     }
+    .edited-tag {
+      font-style: italic;
+      color: var(--text-subtle);
+      opacity: 0.8;
+    }
+    .comment-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .btn-action-icon {
+      background: transparent;
+      border: none;
+      color: var(--text-subtle);
+      cursor: pointer;
+      padding: 0.15rem 0.35rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      transition: var(--transition);
+    }
+    .btn-action-icon:hover {
+      color: var(--text-main);
+      background: var(--bg-surface-hover);
+    }
+    .text-rose { color: var(--accent-rose) !important; }
+    .text-rose:hover { background: rgba(244, 63, 94, 0.15) !important; }
+
     .text {
-      font-size: 0.85rem;
-      color: var(--text-muted);
+      font-size: 0.875rem;
+      color: var(--text-main);
+      line-height: 1.45;
+      white-space: pre-wrap;
     }
+    .inline-edit-box {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-top: 0.2rem;
+    }
+    .edit-textarea {
+      font-size: 0.85rem;
+    }
+    .edit-btn-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.4rem;
+    }
+    .btn-xs {
+      padding: 0.2rem 0.55rem;
+      font-size: 0.75rem;
+    }
+
     .meta-col {
       padding: 1rem;
       display: flex;
@@ -347,6 +492,9 @@ export class TaskDetailModalComponent implements OnInit {
 
   comments = signal<TaskComment[]>([]);
   newCommentText = '';
+
+  editingCommentId = signal<string | null>(null);
+  editText = '';
 
   constructor(
     private taskService: TaskService,
@@ -398,6 +546,32 @@ export class TaskDetailModalComponent implements OnInit {
     this.newCommentText = '';
   }
 
+  startEditingComment(comment: TaskComment) {
+    this.editingCommentId.set(comment.id);
+    this.editText = comment.content;
+  }
+
+  cancelCommentEdit() {
+    this.editingCommentId.set(null);
+    this.editText = '';
+  }
+
+  async saveCommentEdit(commentId: string) {
+    if (!this.editText.trim()) return;
+    const updated = await this.taskService.updateComment(commentId, this.task.id, this.editText.trim());
+    if (updated) {
+      this.comments.update(list => list.map(c => c.id === commentId ? updated : c));
+    }
+    this.cancelCommentEdit();
+  }
+
+  async confirmDeleteComment(commentId: string) {
+    if (confirm('Delete this comment?')) {
+      await this.taskService.deleteComment(commentId, this.task.id);
+      this.comments.update(list => list.filter(c => c.id !== commentId));
+    }
+  }
+
   async deleteTask() {
     if (confirm(`Delete issue "${this.task.title}"?`)) {
       await this.taskService.deleteTask(this.task.id);
@@ -408,6 +582,11 @@ export class TaskDetailModalComponent implements OnInit {
   formatDate(isoString: string): string {
     if (!isoString) return '';
     const date = new Date(isoString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 }
