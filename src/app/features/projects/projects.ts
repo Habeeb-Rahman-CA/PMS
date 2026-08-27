@@ -306,7 +306,7 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       flex-direction: column;
       gap: 1rem;
       padding: 1.25rem;
-      max-width: 1500px;
+      width: 100%;
       margin: 0 auto;
     }
 

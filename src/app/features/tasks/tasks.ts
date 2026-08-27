@@ -283,7 +283,7 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
       flex-direction: column;
       gap: 1.5rem;
       padding: 1.5rem;
-      max-width: 1600px;
+      width: 100%;
       margin: 0 auto;
     }
     .tasks-header {
