@@ -11,12 +11,16 @@
 
       <nav class="desktop-nav">
         <a routerLink="/projects" routerLinkActive="active" class="nav-link">
-          <i class="fi fi-rr-folder"></i>
-          <span>Projects</span>
+          <i class="fi fi-rr-dashboard"></i>
+          <span>Dashboard</span>
+        </a>
+        <a routerLink="/my-work" routerLinkActive="active" class="nav-link">
+          <i class="fi fi-rr-user-check"></i>
+          <span>My Work</span>
         </a>
         <a routerLink="/tasks" routerLinkActive="active" class="nav-link">
           <i class="fi fi-rr-list-check"></i>
-          <span>Tasks & Issues</span>
+          <span>Kanban Board</span>
         </a>
       </nav>
     </div>
@@ -51,12 +55,16 @@
 
         <div class="drawer-links">
           <a routerLink="/projects" routerLinkActive="active" class="drawer-link" (click)="closeMobileMenu()">
-            <i class="fi fi-rr-folder"></i>
-            <span>Projects</span>
+            <i class="fi fi-rr-dashboard"></i>
+            <span>Dashboard</span>
+          </a>
+          <a routerLink="/my-work" routerLinkActive="active" class="drawer-link" (click)="closeMobileMenu()">
+            <i class="fi fi-rr-user-check"></i>
+            <span>My Work</span>
           </a>
           <a routerLink="/tasks" routerLinkActive="active" class="drawer-link" (click)="closeMobileMenu()">
             <i class="fi fi-rr-list-check"></i>
-            <span>Tasks & Issues</span>
+            <span>Kanban Board</span>
           </a>
         </div>
 
