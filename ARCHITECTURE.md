@@ -1,8 +1,8 @@
-# DevFlow - Technical Architecture Specification
+# Bilo - Technical Architecture Specification
 
 ## 1. Executive Overview
 
-**DevFlow** is a personal, minimalist project management application designed specifically for solo developers building and maintaining multiple software projects. It answers the core question: **"What should I work on next?"** without the bloat of enterprise tools like Jira.
+**Bilo** is a personal, minimalist project management application designed specifically for solo developers building and maintaining multiple software projects. It answers the core question: **"What should I work on next?"** without the bloat of enterprise tools like Jira.
 
 ---
 
@@ -167,7 +167,7 @@ src/
 ## 7. Progressive Web App (PWA) & Offline Strategy
 
 1. **Manifest File (`public/manifest.webmanifest`)**:
-   - Short Name: `DevFlow`
+   - Short Name: `Bilo`
    - Start URL: `/`
    - Theme Color: `#0f172a`
    - Display: `standalone`
@@ -179,7 +179,7 @@ src/
 
 ## 8. Deployment Architecture (Cloudflare Pages)
 
-- **Build Output Directory**: `dist/devflow/browser`
+- **Build Output Directory**: `dist/bilo/browser`
 - **Build Command**: `npm run build`
 - **Single Page Application Fallback**: SPA routing enabled (`/200.html` or `/index.html` fallback rule).
 - **Environment Variables**:

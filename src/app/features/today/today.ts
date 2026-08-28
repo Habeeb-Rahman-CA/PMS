@@ -7,16 +7,18 @@ import { WorkspaceService } from '../../core/services/workspace.service';
 import { Task } from '../../core/models/project.model';
 import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
 import { TaskModalComponent } from '../../shared/components/task-modal';
+import { BiloLogoComponent } from '../../shared/components/bilo-logo';
 
 @Component({
   selector: 'app-today',
   standalone: true,
-  imports: [CommonModule, FormsModule, TaskDetailModalComponent, TaskModalComponent],
+  imports: [CommonModule, FormsModule, TaskDetailModalComponent, TaskModalComponent, BiloLogoComponent],
   template: `
     <div class="today-workspace">
       <!-- Top Header Strip -->
       <div class="view-header-strip paper-panel">
         <div class="view-header-left">
+          <app-bilo-logo size="xs" [showText]="false"></app-bilo-logo>
           <span class="badge-mono">01 TODAY</span>
           <h2 class="view-header-title font-mono">{{ todayDateFormatted() }}</h2>
         </div>

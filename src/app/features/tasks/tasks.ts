@@ -11,6 +11,7 @@ import { Project, Task, Workflow } from '../../core/models/project.model';
 import { getTaskKey } from '../../core/utils/task-key.util';
 import { TaskModalComponent } from '../../shared/components/task-modal';
 import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
+import { BiloLogoComponent } from '../../shared/components/bilo-logo';
 
 @Component({
   selector: 'app-tasks',
@@ -20,13 +21,15 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
     FormsModule,
     DragDropModule,
     TaskModalComponent,
-    TaskDetailModalComponent
+    TaskDetailModalComponent,
+    BiloLogoComponent
   ],
   template: `
     <div class="tasks-page-container">
       <!-- 1. Standalone Top Header Bar -->
       <div class="view-header-strip paper-panel">
         <div class="view-header-left">
+          <app-bilo-logo size="xs" [showText]="false"></app-bilo-logo>
           <span class="badge-mono">04 BOARD</span>
           <h2 class="view-header-title">Kanban Board</h2>
         </div>

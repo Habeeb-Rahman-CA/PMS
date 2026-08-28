@@ -22,7 +22,7 @@ export class ProjectService {
   }
 
   private loadFromStorage() {
-    const cached = localStorage.getItem('devflow_projects_data');
+    const cached = localStorage.getItem('bilo_projects_data');
     if (cached) {
       try {
         const data = JSON.parse(cached);
@@ -42,7 +42,7 @@ export class ProjectService {
   }
 
   private saveToStorage() {
-    localStorage.setItem('devflow_projects_data', JSON.stringify({
+    localStorage.setItem('bilo_projects_data', JSON.stringify({
       projects: this.projects(),
       activities: this.activities()
     }));

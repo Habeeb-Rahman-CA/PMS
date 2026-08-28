@@ -7,9 +7,7 @@
         title="Toggle Menu">
         <i [class]="mobileMenuOpen() ? 'fi fi-rr-cross' : 'fi fi-rr-menu-burger'"></i>
       </button>
-      <span [class]="syncService.isOnline() ? 'status-dot dot-emerald' : 'status-dot dot-amber'"
-        [title]="syncService.isOnline() ? 'Network Online' : 'Offline Mode - Queueing mutations'"></span>
-      <span class="brand-title">DEVFLOW</span>
+      <app-bilo-logo size="sm" [showText]="true"></app-bilo-logo>
     </div>
 
     <!-- Middle: Command Palette Search Bar -->
@@ -47,7 +45,9 @@
       [class.mobile-open]="mobileMenuOpen()">
       <div class="sidebar-header">
         @if (!sidebarCollapsed() || mobileMenuOpen()) {
-        <span class="sidebar-label">WORKSPACE</span>
+        <div class="sidebar-brand-box">
+          <span class="sidebar-label">WORKSPACE</span>
+        </div>
         }
         <button class="collapse-toggle-btn desktop-only" (click)="toggleSidebar()"
           [title]="sidebarCollapsed() ? 'Expand Sidebar' : 'Collapse Sidebar'">
@@ -77,9 +77,9 @@
       @if (updateService.updateAvailable()) {
       <div class="update-banner-strip paper-panel font-mono">
         <div class="update-banner-left">
-          <i class="fi fi-rr-refresh text-cyan"></i>
+          <app-bilo-logo size="xs" [showText]="false"></app-bilo-logo>
           <strong>NEW VERSION AVAILABLE</strong>
-          <span class="update-banner-msg">A new update for DevFlow PWA is ready.</span>
+          <span class="update-banner-msg">A new update for Bilo PWA is ready.</span>
         </div>
         <button class="btn btn-primary btn-xs" (click)="updateService.activateUpdate()">
           <i class="fi fi-rr-rotate-right"></i> Reload now
@@ -91,6 +91,7 @@
       @if (!syncService.isOnline()) {
       <div class="offline-banner-strip paper-panel font-mono">
         <div class="offline-banner-left">
+          <app-bilo-logo size="xs" [showText]="false"></app-bilo-logo>
           <span class="status-dot dot-amber"></span>
           <strong>OFFLINE MODE</strong>
           <span class="offline-banner-msg">Your changes will automatically sync when you're back online.</span>
@@ -130,6 +131,7 @@
   <!-- Clean Paper Footer -->
   <footer class="app-footer paper-panel font-mono">
     <div class="footer-left">
+      <app-bilo-logo size="xs" [showText]="false"></app-bilo-logo>
       @if (syncService.isOnline()) {
       <span class="status-dot dot-emerald"></span>
       <span>ONLINE</span>
@@ -142,7 +144,7 @@
     </div>
 
     <div class="footer-right font-mono">
-      <span class="builder-tag">Built by <strong>Bilet</strong></span>
+      <span class="builder-tag">Powered by <app-bilo-logo size="xs" [showText]="true" badge="PM"></app-bilo-logo> • Built by <strong>Bilet</strong></span>
     </div>
   </footer>
 

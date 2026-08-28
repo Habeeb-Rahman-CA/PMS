@@ -29,13 +29,13 @@ export class SyncService {
     this.loadQueueFromStorage();
 
     window.addEventListener('online', () => {
-      console.log('[DevFlow Sync] Network connectivity restored. Triggering offline sync...');
+      console.log('[Bilo Sync] Network connectivity restored. Triggering offline sync...');
       this.isOnline.set(true);
       this.processQueue();
     });
 
     window.addEventListener('offline', () => {
-      console.log('[DevFlow Sync] Device went offline. Queueing local mutations for sync.');
+      console.log('[Bilo Sync] Device went offline. Queueing local mutations for sync.');
       this.isOnline.set(false);
     });
 
@@ -46,7 +46,7 @@ export class SyncService {
   }
 
   private loadQueueFromStorage() {
-    const cached = localStorage.getItem('devflow_sync_queue');
+    const cached = localStorage.getItem('bilo_sync_queue');
     if (cached) {
       try {
         const queue = JSON.parse(cached);
@@ -60,7 +60,7 @@ export class SyncService {
   }
 
   private saveQueueToStorage() {
-    localStorage.setItem('devflow_sync_queue', JSON.stringify(this.pendingSyncQueue()));
+    localStorage.setItem('bilo_sync_queue', JSON.stringify(this.pendingSyncQueue()));
   }
 
   enqueue(opType: PendingSyncOp['type'], payload: any) {
@@ -96,7 +96,7 @@ export class SyncService {
           remainingOps.push(op);
         }
       } catch (e) {
-        console.warn(`[DevFlow Sync] Operation ${op.type} failed, retaining in queue:`, e);
+        console.warn(`[Bilo Sync] Operation ${op.type} failed, retaining in queue:`, e);
         remainingOps.push(op);
       }
     }

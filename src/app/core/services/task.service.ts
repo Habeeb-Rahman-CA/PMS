@@ -20,7 +20,7 @@ export class TaskService {
   }
 
   private loadFromStorage() {
-    const cached = localStorage.getItem('devflow_tasks_data');
+    const cached = localStorage.getItem('bilo_tasks_data');
     if (cached) {
       try {
         const data = JSON.parse(cached);
@@ -39,7 +39,7 @@ export class TaskService {
   }
 
   private saveToStorage() {
-    localStorage.setItem('devflow_tasks_data', JSON.stringify({
+    localStorage.setItem('bilo_tasks_data', JSON.stringify({
       tasks: this.tasks(),
       comments: this.taskComments()
     }));

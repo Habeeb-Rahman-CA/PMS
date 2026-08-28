@@ -8,6 +8,7 @@ import { WorkspaceService } from '../../core/services/workspace.service';
 import { Project, Task } from '../../core/models/project.model';
 import { ProjectModalComponent } from '../../shared/components/project-modal';
 import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
+import { BiloLogoComponent } from '../../shared/components/bilo-logo';
 
 @Component({
   selector: 'app-projects',
@@ -16,13 +17,15 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
     CommonModule,
     FormsModule,
     ProjectModalComponent,
-    WorkflowModalComponent
+    WorkflowModalComponent,
+    BiloLogoComponent
   ],
   template: `
     <div class="projects-workspace font-mono">
       <!-- 1. Header Bar -->
       <div class="view-header-strip paper-panel">
         <div class="view-header-left">
+          <app-bilo-logo size="xs" [showText]="false"></app-bilo-logo>
           <span class="badge-mono">02 PROJECTS</span>
           <h2 class="view-header-title">Projects Workspace</h2>
           <span class="badge-mono text-muted">Total: {{ filteredProjects().length }}</span>

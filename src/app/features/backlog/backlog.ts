@@ -9,16 +9,18 @@ import { Task } from '../../core/models/project.model';
 import { getTaskKey } from '../../core/utils/task-key.util';
 import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
 import { TaskModalComponent } from '../../shared/components/task-modal';
+import { BiloLogoComponent } from '../../shared/components/bilo-logo';
 
 @Component({
   selector: 'app-backlog',
   standalone: true,
-  imports: [CommonModule, FormsModule, TaskDetailModalComponent, TaskModalComponent],
+  imports: [CommonModule, FormsModule, TaskDetailModalComponent, TaskModalComponent, BiloLogoComponent],
   template: `
     <div class="backlog-workspace font-mono">
       <!-- Top Banner Bar -->
       <div class="view-header-strip paper-panel">
         <div class="view-header-left">
+          <app-bilo-logo size="xs" [showText]="false"></app-bilo-logo>
           <span class="badge-mono">03 BACKLOG</span>
           <h2 class="view-header-title">Task Backlog</h2>
           <span class="badge-mono text-muted">{{ filteredTasks().length }} of {{ allTasks().length }} Tasks</span>

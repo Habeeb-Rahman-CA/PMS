@@ -6,7 +6,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "devflow": {
+    "bilo": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -64,10 +64,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "devflow:build:production"
+              "buildTarget": "bilo:build:production"
             },
             "development": {
-              "buildTarget": "devflow:build:development"
+              "buildTarget": "bilo:build:development"
             }
           },
           "defaultConfiguration": "development"

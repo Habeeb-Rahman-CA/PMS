@@ -1,15 +1,15 @@
 /* ==========================================================================
-   DevFlow PWA Service Worker
+   Bilo PWA Service Worker
    Provides App Shell Cache & Network-First / Stale-While-Revalidate Caching
    ========================================================================== */
 
-const CACHE_NAME = 'devflow-pwa-v1';
+const CACHE_NAME = 'bilo-pwa-v1';
 
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/favicon.ico',
+  '/bilo-icon.svg',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap',
   'https://cdn-uicons.flaticon.com/2.6.0/uicons-regular-rounded/css/uicons-regular-rounded.css',
   'https://cdn-uicons.flaticon.com/2.6.0/uicons-solid-rounded/css/uicons-solid-rounded.css',
@@ -20,9 +20,9 @@ const STATIC_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[DevFlow SW] Pre-caching application shell & styles');
+      console.log('[Bilo SW] Pre-caching application shell & styles');
       return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn('[DevFlow SW] Static asset cache warning:', err);
+        console.warn('[Bilo SW] Static asset cache warning:', err);
       });
     })
   );
@@ -42,7 +42,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log('[DevFlow SW] Cleaning old cache bucket:', key);
+            console.log('[Bilo SW] Cleaning old cache bucket:', key);
             return caches.delete(key);
           }
         })

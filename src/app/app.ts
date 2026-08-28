@@ -15,6 +15,7 @@ import { TaskModalComponent } from './shared/components/task-modal';
 
 import { TaskShareService } from './core/services/task-share.service';
 import { TaskDetailModalComponent } from './shared/components/task-detail-modal';
+import { BiloLogoComponent } from './shared/components/bilo-logo';
 import { Task } from './core/models/project.model';
 
 @Component({
@@ -22,6 +23,7 @@ import { Task } from './core/models/project.model';
   standalone: true,
   imports: [
     CommonModule,
+    BiloLogoComponent,
     TodayComponent,
     ProjectsComponent,
     TasksComponent,

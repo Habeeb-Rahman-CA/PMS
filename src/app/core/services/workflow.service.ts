@@ -15,7 +15,7 @@ export class WorkflowService {
   }
 
   private loadFromStorage() {
-    const cached = localStorage.getItem('devflow_workflows_data');
+    const cached = localStorage.getItem('bilo_workflows_data');
     if (cached) {
       try {
         const data = JSON.parse(cached);
@@ -29,7 +29,7 @@ export class WorkflowService {
   }
 
   private saveToStorage() {
-    localStorage.setItem('devflow_workflows_data', JSON.stringify(this.workflows()));
+    localStorage.setItem('bilo_workflows_data', JSON.stringify(this.workflows()));
   }
 
   async loadAllWorkflows() {

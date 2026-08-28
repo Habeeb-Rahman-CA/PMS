@@ -1,4 +1,4 @@
--- DevFlow Personal Project Manager - Supabase PostgreSQL Schema
+-- Bilo Personal Project Manager - Supabase PostgreSQL Schema
 
 -- 1. Projects Table
 create table if not exists public.projects (

@@ -5,17 +5,19 @@ import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
 import { WorkflowService } from '../../core/services/workflow.service';
 import { Task, TaskPriority, TaskType, Workflow } from '../../core/models/project.model';
+import { BiloLogoComponent } from './bilo-logo';
 
 @Component({
   selector: 'app-task-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BiloLogoComponent],
   template: `
     <div class="modal-overlay" (click)="close.emit()">
       <div class="modal-card paper-panel font-mono" (click)="$event.stopPropagation()">
         <!-- Header Strip -->
         <div class="modal-header">
           <div class="header-left">
+            <app-bilo-logo size="xs" [showText]="false"></app-bilo-logo>
             <span class="badge-mono">{{ isEditMode ? 'EDIT TASK' : 'QUICK CREATE' }}</span>
             <h3>
               <i [class]="isEditMode ? 'fi fi-rr-edit text-cyan' : 'fi fi-rr-plus-small text-cyan'"></i>
@@ -144,7 +146,7 @@ import { Task, TaskPriority, TaskType, Workflow } from '../../core/models/projec
           <div class="modal-footer">
             <div class="footer-hint">
               <span class="status-dot dot-emerald"></span>
-              <span>DEVFLOW WORKSPACE ITEM</span>
+              <span>BILO WORKSPACE ITEM</span>
             </div>
             <div class="footer-actions">
               <button type="button" class="btn btn-secondary btn-sm" (click)="close.emit()">

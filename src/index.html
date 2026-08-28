@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>DevFlow - Developer Project Manager</title>
+  <title>Bilo - Developer Project Manager</title>
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#06b6d4">
+  <link rel="icon" type="image/svg+xml" href="bilo-icon.svg">
   <link rel="manifest" href="manifest.webmanifest">
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,8 +23,8 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('[DevFlow PWA] SW registered successfully scope:', reg.scope))
-          .catch(err => console.warn('[DevFlow PWA] SW registration failed:', err));
+          .then(reg => console.log('[Bilo PWA] SW registered successfully scope:', reg.scope))
+          .catch(err => console.warn('[Bilo PWA] SW registration failed:', err));
       });
     }
   </script>

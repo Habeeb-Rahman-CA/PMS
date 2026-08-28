@@ -5,16 +5,18 @@ import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
 import { Task, Project } from '../../core/models/project.model';
 import { getTaskKey } from '../../core/utils/task-key.util';
+import { BiloLogoComponent } from '../../shared/components/bilo-logo';
 
 @Component({
   selector: 'app-archive',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BiloLogoComponent],
   template: `
     <div class="archive-workspace">
       <!-- Header -->
       <div class="view-header-strip paper-panel">
         <div class="view-header-left">
+          <app-bilo-logo size="xs" [showText]="false"></app-bilo-logo>
           <span class="badge-mono">06 ARCHIVE</span>
           <h2 class="view-header-title">Completed Work & Audit</h2>
         </div>
@@ -397,7 +399,7 @@ export class ArchiveComponent {
     XLSX.utils.book_append_sheet(wb, activitiesWs, 'Activity Stream');
 
     // Generate & download formatted .xlsx file
-    const filename = `devflow-workspace-export-${new Date().toISOString().split('T')[0]}.xlsx`;
+    const filename = `bilo-workspace-export-${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, filename);
   }
 

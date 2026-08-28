@@ -1,18 +1,19 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { WorkspaceService } from '../../core/services/workspace.service';
+import { BiloLogoComponent } from './bilo-logo';
 
 @Component({
   selector: 'app-shortcuts-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, BiloLogoComponent],
   template: `
     <div class="modal-overlay" (click)="close()">
       <div class="help-modal-card paper-panel font-mono" (click)="$event.stopPropagation()">
         <!-- Modal Header Strip -->
         <div class="modal-header">
           <div class="header-left">
-            <span class="badge-mono">DEVFLOW GUIDE</span>
+            <app-bilo-logo size="sm" [showText]="true" badge="GUIDE"></app-bilo-logo>
             <h3><i class="fi fi-rr-interrogation text-cyan"></i> Workspace Help & Keyboard Shortcuts</h3>
           </div>
           <button class="btn btn-ghost btn-xs close-btn" (click)="close()" title="Close (Esc)">
@@ -197,7 +198,7 @@ import { WorkspaceService } from '../../core/services/workspace.service';
                     <span>Multi-Sheet Excel Export</span>
                   </div>
                   <p class="card-desc">
-                    Export your entire DevFlow workspace into a structured Excel spreadsheet (<code>.xlsx</code>) containing 4 dedicated sheets: Completed Tasks, All Tasks, Projects Summary, and Activity Stream.
+                    Export your entire Bilo workspace into a structured Excel spreadsheet (<code>.xlsx</code>) containing 4 dedicated sheets: Completed Tasks, All Tasks, Projects Summary, and Activity Stream.
                   </p>
                   <div class="card-tags">
                     <span class="badge-mono">.XLSX Format</span>
@@ -233,7 +234,7 @@ import { WorkspaceService } from '../../core/services/workspace.service';
                   <span>Centralized Project Workflow Management</span>
                 </div>
                 <p class="guide-text">
-                  In DevFlow, workflow configuration is centralized exclusively within the <strong>02 PROJECTS</strong> workspace. Each project card features a status configuration pipeline where you can add custom columns, edit column titles, change color accents, or remove unnecessary workflow states.
+                  In Bilo, workflow configuration is centralized exclusively within the <strong>02 PROJECTS</strong> workspace. Each project card features a status configuration pipeline where you can add custom columns, edit column titles, change color accents, or remove unnecessary workflow states.
                 </p>
 
                 <div class="workflow-steps font-mono">
