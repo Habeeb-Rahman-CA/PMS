@@ -1,6 +1,6 @@
 import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
 import { Task, Project } from '../../core/models/project.model';
