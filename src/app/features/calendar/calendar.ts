@@ -80,7 +80,7 @@ export interface CalendarDayCell {
           </button>
 
           <button class="btn btn-primary btn-sm" (click)="workspaceService.openCreateTaskModal()">
-            <i class="fi fi-rr-plus"></i> New Task <span class="key-badge">N</span>
+            <i class="fi fi-rr-plus"></i> New Task
           </button>
         </div>
       </div>
