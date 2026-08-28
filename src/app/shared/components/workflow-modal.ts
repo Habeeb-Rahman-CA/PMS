@@ -3,18 +3,16 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { WorkflowService } from '../../core/services/workflow.service';
 import { Project, Workflow } from '../../core/models/project.model';
-import { BiloLogoComponent } from './bilo-logo';
 
 @Component({
   selector: 'app-workflow-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, BiloLogoComponent],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="modal-overlay" (click)="close.emit()">
       <div class="modal-card" (click)="$event.stopPropagation()">
         <div class="modal-header">
           <h3>
-            <app-bilo-logo size="xs" [showText]="false"></app-bilo-logo>
             <i class="fi fi-rr-settings-sliders text-cyan"></i>
             <span>Project Status Workflows</span>
           </h3>

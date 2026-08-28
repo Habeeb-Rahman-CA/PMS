@@ -1,19 +1,17 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { WorkspaceService } from '../../core/services/workspace.service';
-import { BiloLogoComponent } from './bilo-logo';
 
 @Component({
   selector: 'app-shortcuts-modal',
   standalone: true,
-  imports: [CommonModule, BiloLogoComponent],
+  imports: [CommonModule],
   template: `
     <div class="modal-overlay" (click)="close()">
       <div class="help-modal-card paper-panel font-mono" (click)="$event.stopPropagation()">
         <!-- Modal Header Strip -->
         <div class="modal-header">
           <div class="header-left">
-            <app-bilo-logo size="sm" [showText]="true" badge="GUIDE"></app-bilo-logo>
             <h3><i class="fi fi-rr-interrogation text-cyan"></i> Workspace Help & Keyboard Shortcuts</h3>
           </div>
           <button class="btn btn-ghost btn-xs close-btn" (click)="close()" title="Close (Esc)">
@@ -557,7 +555,7 @@ import { BiloLogoComponent } from './bilo-logo';
 export class ShortcutsModalComponent {
   activeTab = signal<'shortcuts' | 'features' | 'workflows'>('shortcuts');
 
-  constructor(public workspaceService: WorkspaceService) {}
+  constructor(public workspaceService: WorkspaceService) { }
 
   close() {
     this.workspaceService.shortcutsModalOpen.set(false);

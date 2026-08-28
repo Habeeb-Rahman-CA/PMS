@@ -7,19 +7,17 @@ import { WorkflowService } from '../../core/services/workflow.service';
 import { TaskShareService } from '../../core/services/task-share.service';
 import { Task, TaskComment, Workflow } from '../../core/models/project.model';
 import { getTaskKey } from '../../core/utils/task-key.util';
-import { BiloLogoComponent } from './bilo-logo';
 
 @Component({
   selector: 'app-task-detail-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, BiloLogoComponent],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="modal-overlay" (click)="close.emit()">
       <div class="modal-card detail-card" (click)="$event.stopPropagation()">
         <!-- Header -->
         <div class="detail-header">
           <div class="header-type-row font-mono">
-            <app-bilo-logo size="xs" [showText]="false"></app-bilo-logo>
             <span class="badge" [class]="'badge-' + task.type">
               <i [class]="getTypeIcon(task.type)"></i> {{ task.type }}
             </span>
@@ -544,7 +542,7 @@ export class TaskDetailModalComponent implements OnInit {
     private projectService: ProjectService,
     private workflowService: WorkflowService,
     public taskShareService: TaskShareService
-  ) {}
+  ) { }
 
   async ngOnInit() {
     if (this.task) {

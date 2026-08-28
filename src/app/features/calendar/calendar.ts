@@ -7,7 +7,6 @@ import { WorkspaceService } from '../../core/services/workspace.service';
 import { Task } from '../../core/models/project.model';
 import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
 import { TaskModalComponent } from '../../shared/components/task-modal';
-import { BiloLogoComponent } from '../../shared/components/bilo-logo';
 
 export interface CalendarDayCell {
   dayNumber: number;
@@ -22,13 +21,12 @@ export interface CalendarDayCell {
 @Component({
   selector: 'app-calendar',
   standalone: true,
-  imports: [CommonModule, FormsModule, TaskDetailModalComponent, TaskModalComponent, BiloLogoComponent],
+  imports: [CommonModule, FormsModule, TaskDetailModalComponent, TaskModalComponent],
   template: `
     <div class="calendar-workspace font-mono">
       <!-- Calendar Header Strip -->
       <div class="view-header-strip paper-panel">
         <div class="view-header-left">
-          <app-bilo-logo size="xs" [showText]="false"></app-bilo-logo>
           <span class="badge-mono">05 CALENDAR</span>
           <h2 class="view-header-title">{{ monthTitle() }}</h2>
           <div class="nav-btn-group">
@@ -761,7 +759,7 @@ export class CalendarComponent implements OnInit {
     public taskService: TaskService,
     public projectService: ProjectService,
     public workspaceService: WorkspaceService
-  ) {}
+  ) { }
 
   ngOnInit() {
     this.taskService.loadTasksFromSupabase();

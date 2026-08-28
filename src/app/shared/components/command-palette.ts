@@ -5,8 +5,6 @@ import { WorkspaceService } from '../../core/services/workspace.service';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
 
-import { BiloLogoComponent } from './bilo-logo';
-
 interface PaletteItem {
   id: string;
   type: 'workspace' | 'action' | 'task' | 'project';
@@ -20,13 +18,12 @@ interface PaletteItem {
 @Component({
   selector: 'app-command-palette',
   standalone: true,
-  imports: [CommonModule, FormsModule, BiloLogoComponent],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="modal-overlay" (click)="close()">
       <div class="command-palette-card paper-panel" (click)="$event.stopPropagation()">
         <!-- Search Header -->
         <div class="palette-header">
-          <app-bilo-logo size="xs" [showText]="false"></app-bilo-logo>
           <i class="fi fi-rr-search search-icon"></i>
           <input
             #searchInput
@@ -43,7 +40,6 @@ interface PaletteItem {
         <div #paletteBody class="palette-body">
           @if (filteredItems().length === 0) {
             <div class="empty-results font-mono">
-              <app-bilo-logo size="sm" [showText]="true" badge="SEARCH"></app-bilo-logo>
               <p>No matching commands found for "{{ searchQuery() }}"</p>
             </div>
           } @else {
@@ -79,7 +75,6 @@ interface PaletteItem {
           <div class="footer-hint">
             <span>Use Arrow Keys to Navigate & Enter to Select</span>
           </div>
-          <app-bilo-logo size="xs" [showText]="true" badge="CMD"></app-bilo-logo>
         </div>
       </div>
     </div>
@@ -207,7 +202,7 @@ export class CommandPaletteComponent implements AfterViewInit {
     public workspaceService: WorkspaceService,
     public taskService: TaskService,
     public projectService: ProjectService
-  ) {}
+  ) { }
 
   ngAfterViewInit() {
     setTimeout(() => {

@@ -5,18 +5,16 @@ import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
 import { Task, Project } from '../../core/models/project.model';
 import { getTaskKey } from '../../core/utils/task-key.util';
-import { BiloLogoComponent } from '../../shared/components/bilo-logo';
 
 @Component({
   selector: 'app-archive',
   standalone: true,
-  imports: [CommonModule, BiloLogoComponent],
+  imports: [CommonModule],
   template: `
     <div class="archive-workspace">
       <!-- Header -->
       <div class="view-header-strip paper-panel">
         <div class="view-header-left">
-          <app-bilo-logo size="xs" [showText]="false"></app-bilo-logo>
           <span class="badge-mono">06 ARCHIVE</span>
           <h2 class="view-header-title">Completed Work & Audit</h2>
         </div>
@@ -216,7 +214,7 @@ export class ArchiveComponent {
   constructor(
     public taskService: TaskService,
     public projectService: ProjectService
-  ) {}
+  ) { }
 
   completedTasks = computed(() =>
     this.taskService.tasks().filter(t => t.completed || t.status.toLowerCase() === 'done')
