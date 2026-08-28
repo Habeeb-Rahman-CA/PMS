@@ -5,6 +5,7 @@ import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
 import { WorkspaceService } from '../../core/services/workspace.service';
 import { Task } from '../../core/models/project.model';
+import { getTaskKey } from '../../core/utils/task-key.util';
 import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
 import { TaskModalComponent } from '../../shared/components/task-modal';
 
@@ -186,7 +187,7 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
 
                 <!-- Task Key / Identifier -->
                 <div class="cell-key font-mono">
-                  <span>TASK-{{ t.id.slice(0, 4).toUpperCase() }}</span>
+                  <span>{{ getTaskKeyStr(t) }}</span>
                 </div>
 
                 <!-- Title / Summary -->
@@ -585,6 +586,10 @@ export class BacklogComponent implements OnInit {
     public projectService: ProjectService,
     public workspaceService: WorkspaceService
   ) {}
+
+  getTaskKeyStr(t: Task): string {
+    return getTaskKey(t, this.projectService.projects());
+  }
 
   ngOnInit() {
     this.taskService.loadTasksFromSupabase();

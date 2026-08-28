@@ -7,6 +7,7 @@ import { ProjectService } from '../../core/services/project.service';
 import { WorkflowService } from '../../core/services/workflow.service';
 import { WorkspaceService } from '../../core/services/workspace.service';
 import { Project, Task, Workflow } from '../../core/models/project.model';
+import { getTaskKey } from '../../core/utils/task-key.util';
 import { TaskModalComponent } from '../../shared/components/task-modal';
 import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
 
@@ -189,18 +190,30 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
                     [cdkDragData]="t"
                     (click)="openDetailModal(t)"
                   >
-                    <!-- Card Top Row: Issue Type & Priority -->
+                    <!-- Card Top Row: Issue Type, Key, Priority, Drag Handle -->
                     <div class="card-top font-mono">
                       <div class="type-badge-wrap">
                         <span class="badge-type" [class]="t.type">
                           <i [class]="getTypeIcon(t.type)"></i> {{ t.type }}
                         </span>
-                        <span class="badge-mono" [class.badge-urgent]="t.priority === 'urgent'" [class.badge-high]="t.priority === 'high'">
-                          {{ t.priority }}
+                        <span class="task-key font-mono">
+                          {{ getTaskKeyStr(t) }}
+                        </span>
+                        <span class="priority-badge" [class]="(t.priority || 'medium').toLowerCase()">
+                          {{ t.priority || 'medium' }}
                         </span>
                       </div>
                       <i class="fi fi-rr-grip-dots-vertical drag-grip" title="Drag to move"></i>
                     </div>
+
+                    <!-- Project Pill -->
+                    @if (getProjectName(t.project_id); as projName) {
+                      <div class="card-project-row">
+                        <span class="card-project-pill font-mono">
+                          <i class="fi fi-rr-folder text-amber"></i> {{ projName }}
+                        </span>
+                      </div>
+                    }
 
                     <!-- Card Title -->
                     <h4 class="card-title">{{ t.title }}</h4>
@@ -382,12 +395,12 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       min-height: 420px;
     }
     .task-card {
-      padding: 0.75rem 0.85rem;
+      padding: 0.85rem 0.95rem;
       display: flex;
       flex-direction: column;
       gap: 0.55rem;
       background: var(--bg-surface-subtle);
-      border: 1px solid var(--border-subtle);
+      border: 1px solid var(--border-medium);
       border-radius: var(--radius-xs);
       cursor: grab;
       transition: var(--transition-fast);
@@ -397,8 +410,9 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       cursor: grabbing;
     }
     .task-card:hover {
-      background: var(--bg-surface-hover);
-      border-color: var(--border-medium);
+      background: var(--bg-surface);
+      border-color: var(--border-active);
+      box-shadow: var(--shadow-sm);
     }
     .card-top {
       display: flex;
@@ -407,8 +421,53 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
     }
     .type-badge-wrap {
       display: flex;
-      gap: 0.35rem;
+      gap: 0.4rem;
       align-items: center;
+      flex-wrap: wrap;
+    }
+    .badge-type {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-main);
+      text-transform: capitalize;
+    }
+    .task-key {
+      font-size: 0.725rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .priority-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.1rem 0.4rem;
+      border-radius: var(--radius-xs);
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      border: 1px solid transparent;
+    }
+    .priority-badge.urgent { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+    .priority-badge.high { background: #fef3c7; color: #d97706; border-color: #fcd34d; }
+    .priority-badge.medium { background: #e0f2fe; color: #0284c7; border-color: #7dd3fc; }
+    .priority-badge.low { background: #f3f4f6; color: #4b5563; border-color: #d1d5db; }
+
+    .card-project-row {
+      margin-top: -0.1rem;
+    }
+    .card-project-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.7rem;
+      padding: 0.1rem 0.45rem;
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      color: var(--text-main);
+      font-weight: 600;
     }
     .drag-grip {
       color: var(--text-muted);
@@ -586,6 +645,16 @@ export class TasksComponent {
     const id = this.selectedProjectId();
     if (!id || id === 'all') return null;
     return this.projectService.projects().find(p => p.id === id) || null;
+  }
+
+  getTaskKeyStr(t: Task): string {
+    return getTaskKey(t, this.projectService.projects());
+  }
+
+  getProjectName(projectId?: string): string {
+    if (!projectId) return '';
+    const p = this.projectService.projects().find(item => item.id === projectId);
+    return p ? p.name : '';
   }
 
   getTypeIcon(type: string): string {

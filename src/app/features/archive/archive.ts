@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx-js-style';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
 import { Task, Project } from '../../core/models/project.model';
+import { getTaskKey } from '../../core/utils/task-key.util';
 
 @Component({
   selector: 'app-archive',
@@ -63,7 +64,7 @@ import { Task, Project } from '../../core/models/project.model';
                     </div>
 
                     <div class="row-right font-mono">
-                      <span class="text-subtle">ID: {{ t.id.slice(0, 8) }}</span>
+                      <span class="text-subtle">{{ getTaskKeyStr(t) }}</span>
                       <span class="text-muted">Completed</span>
                     </div>
                   </div>
@@ -310,7 +311,7 @@ export class ArchiveComponent {
       'Timestamp when task was logged'
     ];
     const completedRows = this.completedTasks().map(t => [
-      `TASK-${t.id.slice(0, 4).toUpperCase()}`,
+      getTaskKey(t, this.projectService.projects()),
       t.title,
       (t.type || 'task').toUpperCase(),
       (t.priority || 'medium').toUpperCase(),
@@ -338,7 +339,7 @@ export class ArchiveComponent {
       'Timestamp when task was logged'
     ];
     const allTaskRows = this.taskService.tasks().map(t => [
-      `TASK-${t.id.slice(0, 4).toUpperCase()}`,
+      getTaskKey(t, this.projectService.projects()),
       t.title,
       (t.type || 'task').toUpperCase(),
       (t.priority || 'medium').toUpperCase(),
@@ -398,6 +399,10 @@ export class ArchiveComponent {
     // Generate & download formatted .xlsx file
     const filename = `devflow-workspace-export-${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, filename);
+  }
+
+  getTaskKeyStr(t: Task): string {
+    return getTaskKey(t, this.projectService.projects());
   }
 
   getProjectName(id: string): string {

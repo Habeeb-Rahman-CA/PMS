@@ -5,6 +5,7 @@ import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
 import { WorkflowService } from '../../core/services/workflow.service';
 import { Task, TaskComment, Workflow } from '../../core/models/project.model';
+import { getTaskKey } from '../../core/utils/task-key.util';
 
 @Component({
   selector: 'app-task-detail-modal',
@@ -20,7 +21,7 @@ import { Task, TaskComment, Workflow } from '../../core/models/project.model';
               <i [class]="getTypeIcon(task.type)"></i> {{ task.type }}
             </span>
             <span class="task-key-badge font-mono">
-              TASK-{{ task.id.slice(0, 4).toUpperCase() }}
+              {{ getTaskKeyStr(task) }}
             </span>
             <span class="priority-badge" [class]="(task.priority || 'medium').toLowerCase()">
               {{ task.priority || 'medium' }}
@@ -543,6 +544,10 @@ export class TaskDetailModalComponent implements OnInit {
 
   getAvailableStatuses(): Workflow[] {
     return this.workflowService.getWorkflowsForProject(this.task?.project_id);
+  }
+
+  getTaskKeyStr(task?: Task): string {
+    return getTaskKey(task, this.projectService.projects());
   }
 
   getProjectName(projectId?: string): string | null {
