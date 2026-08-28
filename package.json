@@ -1,12 +1,25 @@
 {
   "name": "bilo",
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "bilo — Personal, Minimalist Developer Project Management Workspace & Kanban System",
+  "author": "bilet team - habrmnc",
+  "license": "MIT",
+  "keywords": [
+    "project-management",
+    "developer-tools",
+    "kanban",
+    "angular",
+    "pwa",
+    "supabase",
+    "minimalist"
+  ],
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "preview": "ng serve --configuration production"
   },
   "private": true,
   "packageManager": "npm@11.11.0",

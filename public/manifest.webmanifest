@@ -1,6 +1,6 @@
 {
-  "name": "Bilo - Developer Project Manager",
-  "short_name": "Bilo",
+  "name": "bilo - Developer Project Manager",
+  "short_name": "bilo",
   "description": "Minimalist developer project management and task focus app",
   "start_url": "/",
   "display": "standalone",

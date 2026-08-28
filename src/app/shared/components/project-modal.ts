@@ -35,7 +35,7 @@ import { Project } from '../../core/models/project.model';
                 class="form-input"
                 [(ngModel)]="name"
                 name="name"
-                placeholder="e.g. Tokio Async Microservice or Bilo Core Engine"
+                placeholder="e.g. Tokio Async Microservice or bilo Core Engine"
                 required
                 autofocus
               />

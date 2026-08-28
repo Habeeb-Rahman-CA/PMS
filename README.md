@@ -1,59 +1,80 @@
-# Bilo
+<p align="center">
+  <img src="public/bilo-icon.svg" width="120" height="120" alt="bilo Logo">
+</p>
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.22.
+<h1 align="center">bilo</h1>
 
-## Development server
+<p align="center">
+  <strong>Minimalist Project Manager & Focus Workspace</strong>
+</p>
 
-To start a local development server, run:
+<p align="center">
+  <img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">
+  <img src="https://img.shields.io/badge/offline-supported-06b6d4.svg" alt="Offline Ready">
+</p>
 
-```bash
-ng serve
-```
+---
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Welcome to bilo
 
-## Code scaffolding
+**bilo** is your sleek, distraction-free workspace for managing personal projects, tracking tasks, and staying focused on what to work on next. Designed to eliminate clutter, bilo gives you total clarity over your tasks without unnecessary steps or complicated setups.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+---
 
-```bash
-ng generate component component-name
-```
+## 🌟 Key Workspaces
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+bilo is organized into dedicated workspaces to keep your workflow clear and structured:
 
-```bash
-ng generate --help
-```
+| Workspace | Description |
+| :--- | :--- |
+| **01 TODAY** | Your main focus dashboard. Highlights urgent tasks due today and items queued up for your immediate focus. |
+| **02 PROJECTS** | Manage your project workspaces, set custom colors, and configure status column workflows tailored to each project. |
+| **03 BACKLOG** | A clean space to capture new ideas, backlog items, and unscheduled tasks before assigning them to a release date. |
+| **04 BOARD** | An interactive drag-and-drop Kanban board to move tasks seamlessly between workflow columns. |
+| **05 CALENDAR** | An interactive monthly calendar. Drag unscheduled items directly onto any day to schedule their due dates. |
+| **06 ARCHIVE** | View all completed work, audit activity streams, and export comprehensive, beautifully formatted Excel (`.xlsx`) workbooks. |
 
-## Building
+---
 
-To build the project run:
+## ⚡ User Guide & Quick Tips
 
-```bash
-ng build
-```
+### 1. Creating & Managing Tasks
+- Click the **+ New Task** button anywhere in the application to log a new task.
+- Set the task title, issue type (*Story*, *Bug*, *Task*, *Epic*), priority level, assignee, due date, and custom tags (`#label`).
+- Drag and drop task cards on the **04 BOARD** view to update their progress state.
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+### 2. Customizing Project Workflows
+- Navigate to **02 PROJECTS** and click **Configure Columns**.
+- Add custom status columns (e.g. *In Review*, *Testing*, *Deployed*), change column colors, and drag to reorder columns.
 
-## Running unit tests
+### 3. Scheduling on the Calendar
+- Go to **05 CALENDAR** and open the **Schedule** drawer.
+- Simply drag any unscheduled task card onto a calendar date to instantly set its due date.
 
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+### 4. Exporting Reports & Excel Audits
+- Open **06 ARCHIVE** and click **Export**.
+- Download a styled Excel file containing separate formatted sheets for *Completed Tasks*, *All Workspace Tasks*, *Projects Summary*, and *Activity Stream*.
 
-```bash
-ng test
-```
+---
 
-## Running end-to-end tests
+## ⌨️ Shortcuts & Command Palette
 
-For end-to-end (e2e) testing, run:
+bilo is designed for fast navigation without leaving your keyboard:
 
-```bash
-ng e2e
-```
+- **`Ctrl + K`** or **`Cmd + K`**: Open the **Command Palette** to search any task, switch workspaces, or run commands instantly.
+- **`?`**: Press `?` anywhere to open the **Keyboard Shortcuts** guide modal.
+- **`Esc`**: Close open modals, drawers, or command palette overlays.
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+---
 
-## Additional Resources
+## 📱 Use bilo Anywhere (Offline & Mobile)
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- **Offline Capable**: bilo automatically saves your work locally when offline and synchronizes your changes when your connection returns.
+- **Installable PWA**: Click *Install App* in your web browser to install bilo as a native desktop or mobile application.
+
+---
+
+## 📄 License
+
+bilo is open-source software licensed under the [MIT License](LICENSE).

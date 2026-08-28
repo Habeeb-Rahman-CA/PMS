@@ -196,7 +196,7 @@ import { WorkspaceService } from '../../core/services/workspace.service';
                     <span>Multi-Sheet Excel Export</span>
                   </div>
                   <p class="card-desc">
-                    Export your entire Bilo workspace into a structured Excel spreadsheet (<code>.xlsx</code>) containing 4 dedicated sheets: Completed Tasks, All Tasks, Projects Summary, and Activity Stream.
+                    Export your entire bilo workspace into a structured Excel spreadsheet (<code>.xlsx</code>) containing 4 dedicated sheets: Completed Tasks, All Tasks, Projects Summary, and Activity Stream.
                   </p>
                   <div class="card-tags">
                     <span class="badge-mono">.XLSX Format</span>
@@ -232,7 +232,7 @@ import { WorkspaceService } from '../../core/services/workspace.service';
                   <span>Centralized Project Workflow Management</span>
                 </div>
                 <p class="guide-text">
-                  In Bilo, workflow configuration is centralized exclusively within the <strong>02 PROJECTS</strong> workspace. Each project card features a status configuration pipeline where you can add custom columns, edit column titles, change color accents, or remove unnecessary workflow states.
+                  In bilo, workflow configuration is centralized exclusively within the <strong>02 PROJECTS</strong> workspace. Each project card features a status configuration pipeline where you can add custom columns, edit column titles, change color accents, or remove unnecessary workflow states.
                 </p>
 
                 <div class="workflow-steps font-mono">

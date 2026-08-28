@@ -4,15 +4,15 @@ import { SupabaseService } from './supabase.service';
 export interface PendingSyncOp {
   id: string;
   type:
-    | 'CREATE_TASK'
-    | 'UPDATE_TASK'
-    | 'DELETE_TASK'
-    | 'CREATE_PROJECT'
-    | 'UPDATE_PROJECT'
-    | 'DELETE_PROJECT'
-    | 'ADD_COMMENT'
-    | 'UPDATE_COMMENT'
-    | 'DELETE_COMMENT';
+  | 'CREATE_TASK'
+  | 'UPDATE_TASK'
+  | 'DELETE_TASK'
+  | 'CREATE_PROJECT'
+  | 'UPDATE_PROJECT'
+  | 'DELETE_PROJECT'
+  | 'ADD_COMMENT'
+  | 'UPDATE_COMMENT'
+  | 'DELETE_COMMENT';
   payload: any;
   timestamp: string;
 }
@@ -29,13 +29,13 @@ export class SyncService {
     this.loadQueueFromStorage();
 
     window.addEventListener('online', () => {
-      console.log('[Bilo Sync] Network connectivity restored. Triggering offline sync...');
+      console.log('[bilo Sync] Network connectivity restored. Triggering offline sync...');
       this.isOnline.set(true);
       this.processQueue();
     });
 
     window.addEventListener('offline', () => {
-      console.log('[Bilo Sync] Device went offline. Queueing local mutations for sync.');
+      console.log('[bilo Sync] Device went offline. Queueing local mutations for sync.');
       this.isOnline.set(false);
     });
 
@@ -96,7 +96,7 @@ export class SyncService {
           remainingOps.push(op);
         }
       } catch (e) {
-        console.warn(`[Bilo Sync] Operation ${op.type} failed, retaining in queue:`, e);
+        console.warn(`[bilo Sync] Operation ${op.type} failed, retaining in queue:`, e);
         remainingOps.push(op);
       }
     }

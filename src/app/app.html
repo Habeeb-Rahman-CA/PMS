@@ -79,7 +79,7 @@
         <div class="update-banner-left">
           <app-bilo-logo size="xs" [showText]="false"></app-bilo-logo>
           <strong>NEW VERSION AVAILABLE</strong>
-          <span class="update-banner-msg">A new update for Bilo PWA is ready.</span>
+          <span class="update-banner-msg">A new update for bilo PWA is ready.</span>
         </div>
         <button class="btn btn-primary btn-xs" (click)="updateService.activateUpdate()">
           <i class="fi fi-rr-rotate-right"></i> Reload now
@@ -161,11 +161,8 @@
 
   <!-- Deep Link Shared Task Detail Modal -->
   @if (taskShareService.activeSharedTask(); as sharedTask) {
-  <app-task-detail-modal
-    [task]="sharedTask"
-    (close)="taskShareService.closeSharedTaskModal()"
-    (editTask)="onEditSharedTask($event)"
-  />
+  <app-task-detail-modal [task]="sharedTask" (close)="taskShareService.closeSharedTaskModal()"
+    (editTask)="onEditSharedTask($event)" />
   }
 
   @if (editingSharedTask()) {

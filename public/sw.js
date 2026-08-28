@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Bilo PWA Service Worker
+   bilo PWA Service Worker
    Provides App Shell Cache & Network-First / Stale-While-Revalidate Caching
    ========================================================================== */
 
@@ -20,9 +20,9 @@ const STATIC_ASSETS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Bilo SW] Pre-caching application shell & styles');
+      console.log('[bilo SW] Pre-caching application shell & styles');
       return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.warn('[Bilo SW] Static asset cache warning:', err);
+        console.warn('[bilo SW] Static asset cache warning:', err);
       });
     })
   );
@@ -42,7 +42,7 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log('[Bilo SW] Cleaning old cache bucket:', key);
+            console.log('[bilo SW] Cleaning old cache bucket:', key);
             return caches.delete(key);
           }
         })

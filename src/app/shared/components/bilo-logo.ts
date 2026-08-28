@@ -7,8 +7,8 @@ import { CommonModule } from '@angular/common';
   imports: [CommonModule],
   template: `
     <div class="bilo-logo-wrapper" [ngClass]="['size-' + size, classNames]" [class.compact]="compact">
-      <div class="bilo-logo-mark" title="Bilo Developer Project Manager">
-        <img src="bilo-icon.svg" class="bilo-logo-img" alt="Bilo Logo" />
+      <div class="bilo-logo-mark" title="bilo Developer Project Manager">
+        <img src="bilo-icon.svg" class="bilo-logo-img" alt="bilo Logo" />
       </div>
     </div>
   `,

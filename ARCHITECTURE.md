@@ -1,8 +1,8 @@
-# Bilo - Technical Architecture Specification
+# bilo - Technical Architecture Specification
 
 ## 1. Executive Overview
 
-**Bilo** is a personal, minimalist project management application designed specifically for solo developers building and maintaining multiple software projects. It answers the core question: **"What should I work on next?"** without the bloat of enterprise tools like Jira.
+**bilo** is a personal, minimalist project management application designed specifically for solo developers building and maintaining multiple software projects. It answers the core question: **"What should I work on next?"** without the bloat of enterprise tools like Jira.
 
 ---
 
@@ -167,7 +167,7 @@ src/
 ## 7. Progressive Web App (PWA) & Offline Strategy
 
 1. **Manifest File (`public/manifest.webmanifest`)**:
-   - Short Name: `Bilo`
+   - Short Name: `bilo`
    - Start URL: `/`
    - Theme Color: `#0f172a`
    - Display: `standalone`

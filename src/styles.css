@@ -1,35 +1,52 @@
 /* ==========================================================================
-   Bilo Central Design System & Theme Utilities
+   bilo Central Design System & Theme Utilities
    Minimalist Monochromatic Craft Paper Theme
    ========================================================================== */
 
 :root {
   /* High-Contrast Cream / Off-White Monochromatic Palette */
-  --bg-canvas: #f8f6f0;          /* Deep craft paper background */
-  --bg-surface: #ffffff;         /* Crisp paper card surface */
-  --bg-surface-subtle: #f3f0e6;  /* Soft elevated paper tone */
-  --bg-surface-hover: #eae6d9;   /* Hover state tone */
-  --bg-surface-active: #dfd9c8;  /* Active state tone */
+  --bg-canvas: #f8f6f0;
+  /* Deep craft paper background */
+  --bg-surface: #ffffff;
+  /* Crisp paper card surface */
+  --bg-surface-subtle: #f3f0e6;
+  /* Soft elevated paper tone */
+  --bg-surface-hover: #eae6d9;
+  /* Hover state tone */
+  --bg-surface-active: #dfd9c8;
+  /* Active state tone */
 
   /* Text & Contrast Scale */
-  --text-main: #1c1917;          /* Near black for maximum contrast */
-  --text-muted: #57534e;         /* Warm charcoal for secondary labels */
-  --text-subtle: #78716c;        /* Soft neutral for metadata */
+  --text-main: #1c1917;
+  /* Near black for maximum contrast */
+  --text-muted: #57534e;
+  /* Warm charcoal for secondary labels */
+  --text-subtle: #78716c;
+  /* Soft neutral for metadata */
 
   /* Precision Crisp Borders (1px rule) */
-  --border-subtle: #e7e2d4;      /* Soft paper border */
-  --border-medium: #d6cebb;      /* Medium card border */
-  --border-active: #1c1917;      /* High-contrast active border */
+  --border-subtle: #e7e2d4;
+  /* Soft paper border */
+  --border-medium: #d6cebb;
+  /* Medium card border */
+  --border-active: #1c1917;
+  /* High-contrast active border */
 
   /* Curated Muted Accent Highlights */
-  --accent-emerald: #15803d;     /* Done / Success */
-  --accent-cyan: #0e7490;        /* Active / In-Progress */
-  --accent-amber: #b45309;       /* Medium / Review */
-  --accent-rose: #be123c;        /* Urgent / Bug / Delete */
-  --accent-purple: #8b5cf6;      /* Bright purple for high contrast visibility */
+  --accent-emerald: #15803d;
+  /* Done / Success */
+  --accent-cyan: #0e7490;
+  /* Active / In-Progress */
+  --accent-amber: #b45309;
+  /* Medium / Review */
+  --accent-rose: #be123c;
+  /* Urgent / Bug / Delete */
+  --accent-purple: #8b5cf6;
+  /* Bright purple for high contrast visibility */
 
   /* Layout & Geometry Tokens */
-  --radius-xs: 2px;              /* Crisp 2px border radius */
+  --radius-xs: 2px;
+  /* Crisp 2px border radius */
   --radius-sm: 4px;
   --radius-md: 6px;
 
@@ -44,7 +61,8 @@
 }
 
 /* Base Body Setup */
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
@@ -57,11 +75,15 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-code, pre, .font-mono {
+code,
+pre,
+.font-mono {
   font-family: var(--font-mono);
 }
 
@@ -202,7 +224,8 @@ code, pre, .font-mono {
   border-color: #fca5a5;
 }
 
-.badge-high, .badge-amber {
+.badge-high,
+.badge-amber {
   background: #fef3c7;
   color: #d97706;
   border-color: #fcd34d;
@@ -228,13 +251,27 @@ code, pre, .font-mono {
   display: inline-block;
   flex-shrink: 0;
 }
-.dot-emerald { background-color: var(--accent-emerald); }
-.dot-cyan { background-color: var(--accent-cyan); }
-.dot-amber { background-color: var(--accent-amber); }
-.dot-rose { background-color: var(--accent-rose); }
+
+.dot-emerald {
+  background-color: var(--accent-emerald);
+}
+
+.dot-cyan {
+  background-color: var(--accent-cyan);
+}
+
+.dot-amber {
+  background-color: var(--accent-amber);
+}
+
+.dot-rose {
+  background-color: var(--accent-rose);
+}
 
 /* Form Control Defaults */
-.form-input, .form-select, .form-textarea {
+.form-input,
+.form-select,
+.form-textarea {
   font-family: var(--font-sans);
   font-size: 0.85rem;
   background: var(--bg-surface);
@@ -246,7 +283,9 @@ code, pre, .font-mono {
   transition: var(--transition-fast);
 }
 
-.form-input:focus, .form-select:focus, .form-textarea:focus {
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
   border-color: var(--border-active);
 }
 
@@ -330,13 +369,33 @@ code, pre, .font-mono {
 }
 
 /* Utility Colors */
-.text-emerald { color: var(--accent-emerald); }
-.text-cyan { color: var(--accent-cyan); }
-.text-amber { color: var(--accent-amber); }
-.text-rose { color: var(--accent-rose); }
-.text-purple { color: var(--accent-purple); }
-.text-muted { color: var(--text-muted); }
-.text-subtle { color: var(--text-subtle); }
+.text-emerald {
+  color: var(--accent-emerald);
+}
+
+.text-cyan {
+  color: var(--accent-cyan);
+}
+
+.text-amber {
+  color: var(--accent-amber);
+}
+
+.text-rose {
+  color: var(--accent-rose);
+}
+
+.text-purple {
+  color: var(--accent-purple);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-subtle {
+  color: var(--text-subtle);
+}
 
 .badge-amber {
   background: #fef3c7;
@@ -346,9 +405,17 @@ code, pre, .font-mono {
 
 /* Skeleton Loading Utilities */
 @keyframes skeletonPulse {
-  0% { opacity: 0.6; }
-  50% { opacity: 0.25; }
-  100% { opacity: 0.6; }
+  0% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 0.25;
+  }
+
+  100% {
+    opacity: 0.6;
+  }
 }
 
 .skeleton-line {
@@ -373,4 +440,3 @@ code, pre, .font-mono {
   flex-direction: column;
   gap: 0.6rem;
 }
-
