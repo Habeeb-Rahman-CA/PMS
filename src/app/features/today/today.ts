@@ -65,7 +65,7 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
         <div class="stat-card paper-panel">
           <div class="stat-top font-mono">
             <span class="stat-label">CREATED</span>
-            <i class="fi fi-rr-plus-circle text-purple stat-icon"></i>
+            <i class="fi fi-rr-plus text-purple stat-icon"></i>
           </div>
           <div class="stat-value font-mono">{{ created7dCount() }}</div>
           <div class="stat-sub font-mono">New issues in last 7d</div>

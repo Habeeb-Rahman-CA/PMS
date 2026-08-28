@@ -26,7 +26,7 @@
   --accent-cyan: #0e7490;        /* Active / In-Progress */
   --accent-amber: #b45309;       /* Medium / Review */
   --accent-rose: #be123c;        /* Urgent / Bug / Delete */
-  --accent-purple: #6b21a8;      /* Epic / Special */
+  --accent-purple: #8b5cf6;      /* Bright purple for high contrast visibility */
 
   /* Layout & Geometry Tokens */
   --radius-xs: 2px;              /* Crisp 2px border radius */
