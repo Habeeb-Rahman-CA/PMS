@@ -33,7 +33,7 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
           <button
             class="btn btn-primary btn-sm"
             [disabled]="activeColumns().length === 0"
-            (click)="openCreateModal()"
+            (click)="workspaceService.openCreateTaskModal()"
           >
             <i class="fi fi-rr-plus"></i> New Task <span class="key-badge">N</span>
           </button>

@@ -22,7 +22,7 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
         </div>
 
         <div class="view-header-right">
-          <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
+          <button class="btn btn-primary btn-sm" (click)="workspaceService.openCreateTaskModal()">
             <i class="fi fi-rr-plus"></i> New Task <span class="key-badge">N</span>
           </button>
         </div>

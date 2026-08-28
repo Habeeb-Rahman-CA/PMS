@@ -79,7 +79,7 @@ export interface CalendarDayCell {
             <i class="fi fi-rr-time-fast"></i> Schedule ({{ unscheduledTasks().length }})
           </button>
 
-          <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
+          <button class="btn btn-primary btn-sm" (click)="workspaceService.openCreateTaskModal()">
             <i class="fi fi-rr-plus"></i> New Task <span class="key-badge">N</span>
           </button>
         </div>

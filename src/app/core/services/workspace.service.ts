@@ -18,6 +18,7 @@ export class WorkspaceService {
   activeWorkspace = signal<WorkspaceSection>('01 TODAY');
   commandPaletteOpen = signal<boolean>(false);
   shortcutsModalOpen = signal<boolean>(false);
+  globalCreateTaskModalOpen = signal<boolean>(false);
 
   readonly workspaces: WorkspaceItem[] = [
     { id: '01 TODAY', key: '1', name: 'TODAY', code: '01', icon: 'fi fi-rr-sun', desc: 'Focus dashboard & metrics' },
@@ -44,11 +45,19 @@ export class WorkspaceService {
     this.shortcutsModalOpen.update(v => !v);
   }
 
+  openCreateTaskModal() {
+    this.globalCreateTaskModalOpen.set(true);
+  }
+
+  closeCreateTaskModal() {
+    this.globalCreateTaskModalOpen.set(false);
+  }
+
   private initKeyboardListeners() {
     if (typeof window === 'undefined') return;
 
     window.addEventListener('keydown', (e: KeyboardEvent) => {
-      // Don't intercept shortcuts when typing in inputs/textareas
+      // Don't intercept shortcuts when typing in inputs/textareas/contenteditable
       const target = e.target as HTMLElement;
       const isInput = target && (
         target.tagName === 'INPUT' ||
@@ -66,6 +75,10 @@ export class WorkspaceService {
 
       // Escape closes modals
       if (e.key === 'Escape') {
+        if (this.globalCreateTaskModalOpen()) {
+          this.globalCreateTaskModalOpen.set(false);
+          return;
+        }
         if (this.commandPaletteOpen()) {
           this.commandPaletteOpen.set(false);
           return;
@@ -77,6 +90,13 @@ export class WorkspaceService {
       }
 
       if (isInput) return;
+
+      // New Task shortcut (N or n)
+      if (e.key.toLowerCase() === 'n' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault();
+        this.openCreateTaskModal();
+        return;
+      }
 
       // Numeric shortcuts 1-6 for switching workspace
       if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {

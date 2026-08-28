@@ -120,4 +120,8 @@
   @if (workspaceService.shortcutsModalOpen()) {
     <app-shortcuts-modal />
   }
+
+  @if (workspaceService.globalCreateTaskModalOpen()) {
+    <app-task-modal (close)="workspaceService.closeCreateTaskModal()" />
+  }
 </div>

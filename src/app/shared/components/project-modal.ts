@@ -10,129 +10,213 @@ import { Project } from '../../core/models/project.model';
   imports: [CommonModule, FormsModule],
   template: `
     <div class="modal-overlay" (click)="close.emit()">
-      <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-card paper-panel font-mono" (click)="$event.stopPropagation()">
+        <!-- Header Strip -->
         <div class="modal-header">
-          <h3>
-            <i [class]="isEditMode ? 'fi fi-rr-edit' : 'fi fi-rr-folder-add'"></i>
-            <span>{{ isEditMode ? 'Edit Project Details' : 'Create New Project' }}</span>
-          </h3>
-          <button class="btn btn-ghost btn-sm" (click)="close.emit()">
+          <div class="header-left">
+            <span class="badge-mono">{{ isEditMode ? 'EDIT PROJECT' : 'NEW PROJECT' }}</span>
+            <h3>
+              <i [class]="isEditMode ? 'fi fi-rr-edit text-cyan' : 'fi fi-rr-folder-add text-cyan'"></i>
+              <span>{{ isEditMode ? 'Edit Project Setup' : 'Create Project' }}</span>
+            </h3>
+          </div>
+          <button class="btn btn-ghost btn-xs close-btn" (click)="close.emit()" title="Close (Esc)">
+            <span class="key-badge">ESC</span>
             <i class="fi fi-rr-cross"></i>
           </button>
         </div>
 
-        <form (ngSubmit)="saveProject()">
-          <!-- Project Name -->
-          <div class="form-group">
-            <label class="form-label">Project Name *</label>
-            <input
-              type="text"
-              class="form-input"
-              [(ngModel)]="name"
-              name="name"
-              placeholder="e.g. Tokio Async Microservice"
-              required
-              autofocus
-            />
-          </div>
-
-          <!-- Repository URL -->
-          <div class="form-group">
-            <label class="form-label">Repository URL (Optional)</label>
-            <div class="input-with-icon">
-              <i class="fi fi-brands-github field-icon"></i>
+        <form (ngSubmit)="saveProject()" class="modal-form">
+          <div class="form-body">
+            <!-- Project Name -->
+            <div class="form-group">
+              <label class="form-label">PROJECT NAME <span class="text-rose">*</span></label>
               <input
-                type="url"
-                class="form-input icon-padded"
-                [(ngModel)]="repositoryUrl"
-                name="repositoryUrl"
-                placeholder="https://github.com/org/repository"
+                type="text"
+                class="form-input"
+                [(ngModel)]="name"
+                name="name"
+                placeholder="e.g. Tokio Async Microservice or DevFlow Core Engine"
+                required
+                autofocus
               />
             </div>
-          </div>
 
-          <!-- Status Row -->
-          <div class="form-group">
-            <label class="form-label">Status</label>
-            <select class="form-select" [(ngModel)]="status" name="status">
-              <option value="active">Active</option>
-              <option value="completed">Completed</option>
-              <option value="archived">Archived</option>
-            </select>
-          </div>
+            <!-- Repository URL -->
+            <div class="form-group">
+              <label class="form-label">REPOSITORY URL (OPTIONAL)</label>
+              <div class="input-with-icon">
+                <i class="fi fi-brands-github field-icon"></i>
+                <input
+                  type="url"
+                  class="form-input icon-padded"
+                  [(ngModel)]="repositoryUrl"
+                  name="repositoryUrl"
+                  placeholder="https://github.com/org/repository"
+                />
+              </div>
+            </div>
 
-          <!-- Labels Input -->
-          <div class="form-group">
-            <label class="form-label">Labels / Tags (comma-separated)</label>
-            <input
-              type="text"
-              class="form-input"
-              [(ngModel)]="labelsInput"
-              name="labelsInput"
-              placeholder="e.g. frontend, angular, rust, pwa"
-            />
-          </div>
+            <!-- Status Row -->
+            <div class="form-group">
+              <label class="form-label">INITIAL STATUS</label>
+              <select class="form-select" [(ngModel)]="status" name="status">
+                <option value="active">Active Workspace</option>
+                <option value="completed">Completed Project</option>
+                <option value="archived">Archived Workspace</option>
+              </select>
+            </div>
 
-          <!-- Description -->
-          <div class="form-group">
-            <label class="form-label">Description</label>
-            <textarea
-              class="form-textarea"
-              rows="3"
-              [(ngModel)]="description"
-              name="description"
-              placeholder="High-level architecture goals, tech stack, or context..."
-            ></textarea>
-          </div>
+            <!-- Labels Input -->
+            <div class="form-group">
+              <label class="form-label">TAGS / TECH STACK (COMMA-SEPARATED)</label>
+              <input
+                type="text"
+                class="form-input"
+                [(ngModel)]="labelsInput"
+                name="labelsInput"
+                placeholder="e.g. frontend, angular, rust, pwa"
+              />
+            </div>
 
-          <!-- Color Accent Picker -->
-          <div class="form-group">
-            <label class="form-label">Accent Color</label>
-            <div class="color-picker">
-              @for (c of availableColors; track c) {
-                <button
-                  type="button"
-                  class="color-btn"
-                  [style.background-color]="c"
-                  [class.selected]="color === c"
-                  (click)="color = c"
-                >
-                  @if (color === c) {
-                    <i class="fi fi-rr-check text-white"></i>
-                  }
-                </button>
-              }
+            <!-- Description -->
+            <div class="form-group">
+              <label class="form-label">DESCRIPTION / SUMMARY</label>
+              <textarea
+                class="form-textarea"
+                rows="3"
+                [(ngModel)]="description"
+                name="description"
+                placeholder="High-level architecture goals, scope summary, or tech stack details..."
+              ></textarea>
+            </div>
+
+            <!-- Color Accent Picker -->
+            <div class="form-group">
+              <label class="form-label">PROJECT COLOR ACCENT</label>
+              <div class="color-picker">
+                @for (c of availableColors; track c) {
+                  <button
+                    type="button"
+                    class="color-btn"
+                    [style.background-color]="c"
+                    [class.selected]="color === c"
+                    (click)="color = c"
+                    [title]="c"
+                  >
+                    @if (color === c) {
+                      <i class="fi fi-rr-check text-white"></i>
+                    }
+                  </button>
+                }
+              </div>
             </div>
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" (click)="close.emit()">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary">
-              <i class="fi fi-rr-check"></i>
-              <span>{{ isEditMode ? 'Save Changes' : 'Create Project' }}</span>
-            </button>
+            <div class="footer-hint">
+              <span class="status-dot dot-emerald"></span>
+              <span>PROJECT METADATA</span>
+            </div>
+            <div class="footer-actions">
+              <button type="button" class="btn btn-secondary btn-sm" (click)="close.emit()">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary btn-sm" [disabled]="!name.trim()">
+                <i class="fi fi-rr-check"></i>
+                <span>{{ isEditMode ? 'Save Changes' : 'Create Project' }}</span>
+              </button>
+            </div>
           </div>
         </form>
       </div>
     </div>
   `,
   styles: [`
+    .modal-card {
+      width: 100%;
+      max-width: 540px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-xs);
+      box-shadow: var(--shadow-modal);
+      overflow: hidden;
+    }
+
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.25rem;
-      padding-bottom: 0.75rem;
+      padding: 0.85rem 1.15rem;
       border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
     }
-    .modal-header h3 {
+    .header-left {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      font-size: 1.15rem;
+      gap: 0.65rem;
     }
+    .header-left h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .close-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .modal-form {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+    .form-body {
+      padding: 1.15rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      max-height: calc(90vh - 120px);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .form-label {
+      font-size: 0.675rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      padding: 0.45rem 0.65rem;
+      transition: var(--transition-fast);
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--border-medium);
+      background: var(--bg-surface);
+    }
+
     .input-with-icon {
       position: relative;
       display: flex;
@@ -141,44 +225,56 @@ import { Project } from '../../core/models/project.model';
     .field-icon {
       position: absolute;
       left: 0.75rem;
-      color: var(--text-subtle);
-      font-size: 1rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
     }
     .icon-padded {
       padding-left: 2.3rem;
     }
+
     .color-picker {
       display: flex;
-      gap: 0.75rem;
-      margin-top: 0.35rem;
+      gap: 0.65rem;
+      margin-top: 0.2rem;
     }
     .color-btn {
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       border: 2px solid transparent;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: var(--transition);
+      transition: var(--transition-fast);
     }
     .color-btn.selected {
-      border-color: #ffffff;
+      border-color: var(--text-main);
       transform: scale(1.15);
-      box-shadow: 0 0 10px rgba(255,255,255,0.4);
     }
     .text-white {
       color: #ffffff;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
     }
+
     .modal-footer {
       display: flex;
-      justify-content: flex-end;
-      gap: 0.75rem;
-      padding-top: 1.25rem;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1.15rem;
+      background: var(--bg-surface-subtle);
       border-top: 1px solid var(--border-subtle);
-      margin-top: 0.5rem;
+    }
+    .footer-hint {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.675rem;
+      color: var(--text-muted);
+    }
+    .footer-actions {
+      display: flex;
+      gap: 0.5rem;
     }
   `]
 })

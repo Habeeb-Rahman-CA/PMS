@@ -9,6 +9,7 @@ import { CalendarComponent } from './features/calendar/calendar';
 import { ArchiveComponent } from './features/archive/archive';
 import { CommandPaletteComponent } from './shared/components/command-palette';
 import { ShortcutsModalComponent } from './shared/components/shortcuts-modal';
+import { TaskModalComponent } from './shared/components/task-modal';
 
 @Component({
   selector: 'app-root',
@@ -22,7 +23,8 @@ import { ShortcutsModalComponent } from './shared/components/shortcuts-modal';
     CalendarComponent,
     ArchiveComponent,
     CommandPaletteComponent,
-    ShortcutsModalComponent
+    ShortcutsModalComponent,
+    TaskModalComponent
   ],
   templateUrl: './app.html',
   styleUrl: './app.css'

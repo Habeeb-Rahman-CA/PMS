@@ -12,171 +12,265 @@ import { Task, TaskPriority, TaskType, Workflow } from '../../core/models/projec
   imports: [CommonModule, FormsModule],
   template: `
     <div class="modal-overlay" (click)="close.emit()">
-      <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-card paper-panel font-mono" (click)="$event.stopPropagation()">
+        <!-- Header Strip -->
         <div class="modal-header">
-          <h3>
-            <i [class]="isEditMode ? 'fi fi-rr-edit' : 'fi fi-rr-plus-small'"></i>
-            <span>{{ isEditMode ? 'Edit Task' : 'Quick Create Task' }}</span>
-          </h3>
-          <button class="btn btn-ghost btn-sm" (click)="close.emit()">
+          <div class="header-left">
+            <span class="badge-mono">{{ isEditMode ? 'EDIT TASK' : 'QUICK CREATE' }}</span>
+            <h3>
+              <i [class]="isEditMode ? 'fi fi-rr-edit text-cyan' : 'fi fi-rr-plus-small text-cyan'"></i>
+              <span>{{ isEditMode ? 'Edit Task Details' : 'Create New Task' }}</span>
+            </h3>
+          </div>
+          <button class="btn btn-ghost btn-xs close-btn" (click)="close.emit()" title="Close (Esc)">
+            <span class="key-badge">ESC</span>
             <i class="fi fi-rr-cross"></i>
           </button>
         </div>
 
-        <form (ngSubmit)="saveTask()">
-          <!-- Title -->
-          <div class="form-group">
-            <label class="form-label">Summary / Title *</label>
-            <input
-              type="text"
-              class="form-input"
-              [(ngModel)]="title"
-              name="title"
-              placeholder="e.g. Implement JWT Auth interceptor or Fix CSS grid layout"
-              required
-              autofocus
-            />
-          </div>
-
-          <!-- Type & Project Row -->
-          <div class="form-row">
-            <div class="form-group half">
-              <label class="form-label">Issue Type</label>
-              <select class="form-select" [(ngModel)]="type" name="type">
-                <option value="task">Task</option>
-                <option value="bug">Bug</option>
-                <option value="story">Story</option>
-                <option value="epic">Epic</option>
-              </select>
-            </div>
-
-            <div class="form-group half">
-              <label class="form-label">Project *</label>
-              <select class="form-select" [(ngModel)]="projectId" name="projectId" required>
-                <option value="" disabled>Select Project...</option>
-                @for (p of projectService.projects(); track p.id) {
-                  <option [value]="p.id">{{ p.name }}</option>
-                }
-              </select>
-            </div>
-          </div>
-
-          <!-- Status & Priority Row -->
-          <div class="form-row">
-            <div class="form-group half">
-              <label class="form-label">Status Column</label>
-              <select class="form-select" [(ngModel)]="status" name="status">
-                @if (getAvailableStatuses().length === 0) {
-                  <option value="">No workflow status available</option>
-                } @else {
-                  @for (col of getAvailableStatuses(); track col.id) {
-                    <option [value]="col.name">{{ col.name }}</option>
-                  }
-                }
-              </select>
-            </div>
-
-            <div class="form-group half">
-              <label class="form-label">Priority</label>
-              <select class="form-select" [(ngModel)]="priority" name="priority">
-                <option value="urgent">Urgent</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Assignee & Due Date Row -->
-          <div class="form-row">
-            <div class="form-group half">
-              <label class="form-label">Assignee</label>
+        <form (ngSubmit)="saveTask()" class="modal-form">
+          <div class="form-body">
+            <!-- Title -->
+            <div class="form-group">
+              <label class="form-label">SUMMARY / TITLE <span class="text-rose">*</span></label>
               <input
                 type="text"
                 class="form-input"
-                [(ngModel)]="assignee"
-                name="assignee"
-                placeholder="Self"
+                [(ngModel)]="title"
+                name="title"
+                placeholder="e.g. Implement JWT Auth interceptor or Fix CSS grid layout"
+                required
+                autofocus
               />
             </div>
 
-            <div class="form-group half">
-              <label class="form-label">Due Date</label>
+            <!-- Type & Project Row -->
+            <div class="form-row">
+              <div class="form-group half">
+                <label class="form-label">ISSUE TYPE</label>
+                <select class="form-select" [(ngModel)]="type" name="type">
+                  <option value="task">Task</option>
+                  <option value="bug">Bug</option>
+                  <option value="story">Story</option>
+                  <option value="epic">Epic</option>
+                </select>
+              </div>
+
+              <div class="form-group half">
+                <label class="form-label">PROJECT <span class="text-rose">*</span></label>
+                <select class="form-select" [(ngModel)]="projectId" name="projectId" required>
+                  <option value="" disabled>Select Project...</option>
+                  @for (p of projectService.projects(); track p.id) {
+                    <option [value]="p.id">{{ p.name }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <!-- Status & Priority Row -->
+            <div class="form-row">
+              <div class="form-group half">
+                <label class="form-label">STATUS COLUMN</label>
+                <select class="form-select" [(ngModel)]="status" name="status">
+                  @if (getAvailableStatuses().length === 0) {
+                    <option value="">No status available</option>
+                  } @else {
+                    @for (col of getAvailableStatuses(); track col.id) {
+                      <option [value]="col.name">{{ col.name }}</option>
+                    }
+                  }
+                </select>
+              </div>
+
+              <div class="form-group half">
+                <label class="form-label">PRIORITY</label>
+                <select class="form-select" [(ngModel)]="priority" name="priority">
+                  <option value="urgent">Urgent</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Assignee & Due Date Row -->
+            <div class="form-row">
+              <div class="form-group half">
+                <label class="form-label">ASSIGNEE</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  [(ngModel)]="assignee"
+                  name="assignee"
+                  placeholder="Self"
+                />
+              </div>
+
+              <div class="form-group half">
+                <label class="form-label">DUE DATE</label>
+                <input
+                  type="date"
+                  class="form-input"
+                  [(ngModel)]="dueDate"
+                  name="dueDate"
+                />
+              </div>
+            </div>
+
+            <!-- Labels Input -->
+            <div class="form-group">
+              <label class="form-label">TAGS / LABELS (COMMA-SEPARATED)</label>
               <input
-                type="date"
+                type="text"
                 class="form-input"
-                [(ngModel)]="dueDate"
-                name="dueDate"
+                [(ngModel)]="labelsInput"
+                name="labelsInput"
+                placeholder="e.g. backend, security, priority"
               />
             </div>
-          </div>
 
-          <!-- Labels Input -->
-          <div class="form-group">
-            <label class="form-label">Labels / Tags (comma-separated)</label>
-            <input
-              type="text"
-              class="form-input"
-              [(ngModel)]="labelsInput"
-              name="labelsInput"
-              placeholder="e.g. backend, security, priority"
-            />
-          </div>
-
-          <!-- Description -->
-          <div class="form-group">
-            <label class="form-label">Description</label>
-            <textarea
-              class="form-textarea"
-              rows="3"
-              [(ngModel)]="description"
-              name="description"
-              placeholder="Task acceptance criteria, technical details, or notes..."
-            ></textarea>
+            <!-- Description -->
+            <div class="form-group">
+              <label class="form-label">DESCRIPTION / NOTES</label>
+              <textarea
+                class="form-textarea"
+                rows="3"
+                [(ngModel)]="description"
+                name="description"
+                placeholder="Acceptance criteria, technical notes, or reference URLs..."
+              ></textarea>
+            </div>
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" (click)="close.emit()">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary" [disabled]="!title.trim() || !projectId">
-              <i class="fi fi-rr-check"></i>
-              <span>{{ isEditMode ? 'Save Changes' : 'Create Task' }}</span>
-            </button>
+            <div class="footer-hint">
+              <span class="status-dot dot-emerald"></span>
+              <span>DEVFLOW WORKSPACE ITEM</span>
+            </div>
+            <div class="footer-actions">
+              <button type="button" class="btn btn-secondary btn-sm" (click)="close.emit()">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary btn-sm" [disabled]="!title.trim() || !projectId">
+                <i class="fi fi-rr-check"></i>
+                <span>{{ isEditMode ? 'Save Changes' : 'Create Task' }}</span>
+              </button>
+            </div>
           </div>
         </form>
       </div>
     </div>
   `,
   styles: [`
+    .modal-card {
+      width: 100%;
+      max-width: 580px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-xs);
+      box-shadow: var(--shadow-modal);
+      overflow: hidden;
+    }
+
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.25rem;
-      padding-bottom: 0.75rem;
+      padding: 0.85rem 1.15rem;
       border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
     }
-    .modal-header h3 {
+    .header-left {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      font-size: 1.15rem;
+      gap: 0.65rem;
+    }
+    .header-left h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .close-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .modal-form {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+    .form-body {
+      padding: 1.15rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      max-height: calc(90vh - 120px);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
     }
     .form-row {
       display: flex;
-      gap: 1rem;
+      gap: 0.85rem;
     }
     .half {
       flex: 1;
     }
+
+    .form-label {
+      font-size: 0.675rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      padding: 0.45rem 0.65rem;
+      transition: var(--transition-fast);
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--border-medium);
+      background: var(--bg-surface);
+    }
+
     .modal-footer {
       display: flex;
-      justify-content: flex-end;
-      gap: 0.75rem;
-      padding-top: 1.25rem;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1.15rem;
+      background: var(--bg-surface-subtle);
       border-top: 1px solid var(--border-subtle);
-      margin-top: 0.5rem;
+    }
+    .footer-hint {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.675rem;
+      color: var(--text-muted);
+    }
+    .footer-actions {
+      display: flex;
+      gap: 0.5rem;
     }
   `]
 })
