@@ -15,16 +15,19 @@ import { Task, TaskComment, Workflow } from '../../core/models/project.model';
       <div class="modal-card detail-card" (click)="$event.stopPropagation()">
         <!-- Header -->
         <div class="detail-header">
-          <div class="header-type-row">
+          <div class="header-type-row font-mono">
             <span class="badge" [class]="'badge-' + task.type">
               <i [class]="getTypeIcon(task.type)"></i> {{ task.type }}
             </span>
-            <span class="badge" [class]="'badge-' + task.priority">
-              {{ task.priority }} priority
+            <span class="task-key-badge font-mono">
+              TASK-{{ task.id.slice(0, 4).toUpperCase() }}
+            </span>
+            <span class="priority-badge" [class]="(task.priority || 'medium').toLowerCase()">
+              {{ task.priority || 'medium' }}
             </span>
             @if (getProjectName(task.project_id); as projName) {
-              <span class="project-tag">
-                <i class="fi fi-rr-folder"></i> {{ projName }}
+              <span class="project-pill font-mono">
+                <i class="fi fi-rr-folder text-amber"></i> {{ projName }}
               </span>
             }
           </div>
@@ -230,15 +233,44 @@ import { Task, TaskComment, Workflow } from '../../core/models/project.model';
     .header-type-row {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 0.5rem;
       flex-wrap: wrap;
     }
-    .project-tag {
-      font-size: 0.8rem;
-      color: var(--accent-cyan);
-      display: flex;
+    .task-key-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      padding: 0.15rem 0.5rem;
+      border-radius: var(--radius-xs);
+    }
+    .priority-badge {
+      display: inline-flex;
       align-items: center;
-      gap: 0.3rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: var(--radius-xs);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      border: 1px solid transparent;
+    }
+    .priority-badge.urgent { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+    .priority-badge.high { background: #fef3c7; color: #d97706; border-color: #fcd34d; }
+    .priority-badge.medium { background: #e0f2fe; color: #0284c7; border-color: #7dd3fc; }
+    .priority-badge.low { background: #f3f4f6; color: #4b5563; border-color: #d1d5db; }
+
+    .project-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      padding: 0.15rem 0.55rem;
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-xs);
+      color: var(--text-main);
+      font-weight: 600;
     }
     .detail-body {
       display: grid;
