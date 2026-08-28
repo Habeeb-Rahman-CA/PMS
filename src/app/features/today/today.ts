@@ -14,163 +14,223 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
   imports: [CommonModule, FormsModule, TaskDetailModalComponent, TaskModalComponent],
   template: `
     <div class="today-workspace">
-      <!-- Top Banner Strip -->
+      <!-- Top Header Strip -->
       <div class="today-banner paper-panel">
         <div class="banner-left">
           <span class="badge-mono">01 TODAY</span>
-          <h2>Focus Dashboard</h2>
           <span class="banner-date font-mono">{{ todayDateFormatted() }}</span>
         </div>
 
         <div class="banner-right">
-          <div class="streak-pill badge-mono font-mono">
-            <i class="fi fi-rr-flame text-amber"></i> STREAK: {{ streakDays }} DAYS
-          </div>
           <button class="btn btn-primary btn-sm" (click)="showNewTaskModal.set(true)">
             <i class="fi fi-rr-plus"></i> New Task <span class="key-badge">N</span>
           </button>
         </div>
       </div>
 
-      <!-- Quick Add Task Input Bar -->
-      <div class="quick-add-bar paper-panel">
-        <i class="fi fi-rr-check-circle text-muted"></i>
-        <input
-          type="text"
-          class="quick-input font-mono"
-          placeholder="Quick add a task for Today (press Enter)..."
-          [(ngModel)]="quickTaskTitle"
-          (keydown.enter)="quickAddTask()"
-        />
-        <button class="btn btn-secondary btn-xs" (click)="quickAddTask()" [disabled]="!quickTaskTitle().trim()">
-          Add Task
-        </button>
-      </div>
-
-      <!-- 2-Column Focus Grid -->
-      <div class="today-grid">
-        <!-- Main Column: Today's Action Items -->
-        <div class="grid-main">
-          <div class="paper-panel section-box">
-            <div class="box-header">
-              <h3>
-                <span class="status-dot dot-emerald"></span> Today's Action Items
-              </h3>
-              <span class="badge-mono font-mono">{{ todayTasks().length }} Items</span>
-            </div>
-
-            <div class="box-body">
-              @if (todayTasks().length === 0) {
-                <div class="empty-state font-mono">
-                  <i class="fi fi-rr-sun text-amber"></i>
-                  <span>No action items due today. All caught up!</span>
-                </div>
-              } @else {
-                <div class="task-list">
-                  @for (t of todayTasks(); track t.id) {
-                    <div class="task-item-row" (click)="openDetail(t)">
-                      <div class="row-left">
-                        <button class="btn-check" (click)="toggleTaskComplete($event, t)" [title]="t.completed ? 'Mark incomplete' : 'Mark complete'">
-                          <i [class]="t.completed ? 'fi fi-rr-check-square text-emerald' : 'fi fi-rr-square text-muted'"></i>
-                        </button>
-
-                        <span class="task-title" [class.completed]="t.completed">{{ t.title }}</span>
-
-                        <span class="badge-mono" [class.badge-urgent]="t.priority === 'urgent'" [class.badge-high]="t.priority === 'high'">
-                          {{ t.priority }}
-                        </span>
-
-                        <span class="badge-type" [class]="t.type">{{ t.type }}</span>
-                      </div>
-
-                      <div class="row-right font-mono">
-                        <span class="status-tag">
-                          <span class="status-dot" [class]="getDotClass(t.status)"></span> {{ t.status }}
-                        </span>
-                        @if (t.due_date) {
-                          <span class="due-tag">{{ t.due_date }}</span>
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
+      <!-- ROW 1: 4 Stat Cards (Last 7 Days & Due Soon) -->
+      <div class="stats-row">
+        <!-- Card 1: Completed -->
+        <div class="stat-card paper-panel">
+          <div class="stat-top font-mono">
+            <span class="stat-label">COMPLETED</span>
+            <i class="fi fi-rr-check-circle text-emerald stat-icon"></i>
           </div>
-
-          <!-- Urgent Priority & Overdue Items -->
-          <div class="paper-panel section-box">
-            <div class="box-header">
-              <h3>
-                <span class="status-dot dot-rose"></span> Urgent Priority & Overdue Attention
-              </h3>
-              <span class="badge-mono font-mono">{{ urgentOrOverdue().length }} Items</span>
-            </div>
-
-            <div class="box-body">
-              @if (urgentOrOverdue().length === 0) {
-                <div class="empty-state font-mono">
-                  <i class="fi fi-rr-check-circle text-emerald"></i>
-                  <span>No urgent or overdue tasks remaining.</span>
-                </div>
-              } @else {
-                <div class="task-list">
-                  @for (t of urgentOrOverdue(); track t.id) {
-                    <div class="task-item-row urgent-row" (click)="openDetail(t)">
-                      <div class="row-left">
-                        <span class="status-dot dot-rose"></span>
-                        <span class="task-title">{{ t.title }}</span>
-                        <span class="badge-mono badge-urgent">{{ t.priority }}</span>
-                      </div>
-                      <div class="row-right font-mono">
-                        <span class="status-tag">{{ t.status }}</span>
-                        <span class="due-tag text-rose">{{ t.due_date || 'No Date' }}</span>
-                      </div>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-          </div>
+          <div class="stat-value font-mono">{{ completed7dCount() }}</div>
+          <div class="stat-sub font-mono">Tasks finished in last 7d</div>
         </div>
 
-        <!-- Sidebar Column: Summary Statistics & Quick Nav -->
-        <div class="grid-side">
-          <!-- Daily Progress Widget -->
-          <div class="paper-panel side-box">
-            <div class="box-header">
-              <span class="form-label">DAILY COMPLETION</span>
-              <span class="font-mono">{{ completionRate() }}%</span>
-            </div>
-            <div class="progress-bar-track">
-              <div class="progress-bar-fill" [style.width]="completionRate() + '%'"></div>
-            </div>
-            <div class="stat-sub font-mono">
-              Completed {{ completedTodayCount() }} of {{ totalCount() }} total tasks
-            </div>
+        <!-- Card 2: Updated -->
+        <div class="stat-card paper-panel">
+          <div class="stat-top font-mono">
+            <span class="stat-label">UPDATED</span>
+            <i class="fi fi-rr-refresh text-cyan stat-icon"></i>
+          </div>
+          <div class="stat-value font-mono">{{ updated7dCount() }}</div>
+          <div class="stat-sub font-mono">Tasks modified in last 7d</div>
+        </div>
+
+        <!-- Card 3: Created -->
+        <div class="stat-card paper-panel">
+          <div class="stat-top font-mono">
+            <span class="stat-label">CREATED</span>
+            <i class="fi fi-rr-plus-circle text-purple stat-icon"></i>
+          </div>
+          <div class="stat-value font-mono">{{ created7dCount() }}</div>
+          <div class="stat-sub font-mono">New issues in last 7d</div>
+        </div>
+
+        <!-- Card 4: Due Soon -->
+        <div class="stat-card paper-panel">
+          <div class="stat-top font-mono">
+            <span class="stat-label">DUE SOON</span>
+            <i class="fi fi-rr-clock text-amber stat-icon"></i>
+          </div>
+          <div class="stat-value font-mono">{{ dueSoonCount() }}</div>
+          <div class="stat-sub font-mono">Due within next 7d</div>
+        </div>
+      </div>
+
+      <!-- ROW 2: Status Overview (Pie/Donut Chart) + Recent Activity (Latest 5) -->
+      <div class="dashboard-grid-2col">
+        <!-- Card 1: Status Overview (Pie/Donut Chart) -->
+        <div class="paper-panel grid-card">
+          <div class="card-header">
+            <h3><i class="fi fi-rr-chart-pie text-cyan"></i> Status Overview</h3>
+            <span class="badge-mono font-mono">{{ totalTaskCount() }} Total</span>
           </div>
 
-          <!-- Active Workspace Quick Switcher -->
-          <div class="paper-panel side-box">
-            <div class="box-header">
-              <span class="form-label">WORKSPACES JUMP</span>
-            </div>
-            <div class="quick-ws-list">
-              @for (ws of workspaceService.workspaces; track ws.id) {
-                <div class="quick-ws-item" (click)="workspaceService.setWorkspace(ws.id)">
-                  <div class="ws-item-left font-mono">
-                    <span class="ws-code">{{ ws.code }}</span>
-                    <span>{{ ws.name }}</span>
+          <div class="card-body donut-body">
+            @if (totalTaskCount() === 0) {
+              <div class="empty-chart font-mono">
+                <i class="fi fi-rr-chart-pie text-subtle"></i>
+                <span>No tasks available for status overview</span>
+              </div>
+            } @else {
+              <div class="donut-chart-container">
+                <!-- SVG Donut Chart -->
+                <svg class="donut-svg" viewBox="0 0 100 100">
+                  @for (seg of donutSegments(); track seg.name) {
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="38"
+                      fill="transparent"
+                      [attr.stroke]="seg.color"
+                      stroke-width="16"
+                      [attr.stroke-dasharray]="seg.dashArray"
+                      [attr.stroke-dashoffset]="seg.dashOffset"
+                    />
+                  }
+                </svg>
+                <div class="donut-center-text font-mono">
+                  <span class="center-num">{{ totalTaskCount() }}</span>
+                  <span class="center-lbl">TASKS</span>
+                </div>
+              </div>
+
+              <!-- Donut Legend -->
+              <div class="legend-list font-mono">
+                @for (st of statusCounts(); track st.name) {
+                  <div class="legend-item">
+                    <div class="legend-left">
+                      <span class="status-dot" [style.background-color]="st.color"></span>
+                      <span class="legend-name">{{ st.name }}</span>
+                    </div>
+                    <div class="legend-right">
+                      <span class="legend-cnt">{{ st.count }}</span>
+                      <span class="legend-pct">({{ st.percent }}%)</span>
+                    </div>
                   </div>
-                  <span class="key-badge">{{ ws.key }}</span>
-                </div>
-              }
-            </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Card 2: Recent Activity (Latest 5 Entries) -->
+        <div class="paper-panel grid-card">
+          <div class="card-header">
+            <h3><i class="fi fi-rr-time-past text-amber"></i> Recent Activity</h3>
+            <span class="badge-mono font-mono">Latest 5</span>
+          </div>
+
+          <div class="card-body">
+            @if (recentActivities().length === 0) {
+              <div class="empty-chart font-mono">
+                <i class="fi fi-rr-time-past text-subtle"></i>
+                <span>No recent activity logged</span>
+              </div>
+            } @else {
+              <div class="timeline-list font-mono">
+                @for (act of recentActivities(); track act.id) {
+                  <div class="timeline-item">
+                    <span class="timeline-dot"></span>
+                    <div class="timeline-content">
+                      <span class="act-text">{{ act.action }}: {{ act.description }}</span>
+                      <span class="act-time">{{ formatDate(act.timestamp) }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
           </div>
         </div>
       </div>
 
-      <!-- Modals -->
+      <!-- ROW 3: Priority Breakdown (Vertical Bars) + Types of Work (Horizontal Bars) -->
+      <div class="dashboard-grid-2col">
+        <!-- Card 1: Priority Breakdown (Vertical Bars) -->
+        <div class="paper-panel grid-card">
+          <div class="card-header">
+            <h3><i class="fi fi-rr-stats text-rose"></i> Priority Breakdown</h3>
+          </div>
+
+          <div class="card-body vbars-body">
+            @if (totalTaskCount() === 0) {
+              <div class="empty-chart font-mono">
+                <i class="fi fi-rr-stats text-subtle"></i>
+                <span>No task priority data available</span>
+              </div>
+            } @else {
+              <div class="vbars-container font-mono">
+                @for (pri of priorityCounts(); track pri.name) {
+                  <div class="vbar-col">
+                    <span class="vbar-count">{{ pri.count }}</span>
+                    <div class="vbar-track">
+                      <div
+                        class="vbar-fill"
+                        [style.height]="pri.percent + '%'"
+                        [style.background-color]="pri.color"
+                      ></div>
+                    </div>
+                    <span class="vbar-label">{{ pri.name }}</span>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Card 2: Types of Work (Horizontal Bars) -->
+        <div class="paper-panel grid-card">
+          <div class="card-header">
+            <h3><i class="fi fi-rr-box text-purple"></i> Types of Work</h3>
+          </div>
+
+          <div class="card-body hbars-body">
+            @if (totalTaskCount() === 0) {
+              <div class="empty-chart font-mono">
+                <i class="fi fi-rr-box text-subtle"></i>
+                <span>No task type data available</span>
+              </div>
+            } @else {
+              <div class="hbars-list font-mono">
+                @for (tp of typeCounts(); track tp.name) {
+                  <div class="hbar-row">
+                    <div class="hbar-meta">
+                      <div class="type-name">
+                        <i [class]="tp.icon"></i>
+                        <span>{{ tp.name }}</span>
+                      </div>
+                      <span class="type-count">{{ tp.count }}</span>
+                    </div>
+                    <div class="hbar-track">
+                      <div
+                        class="hbar-fill"
+                        [style.width]="tp.percent + '%'"
+                        [style.background-color]="tp.color"
+                      ></div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Task Modals -->
       @if (showNewTaskModal()) {
         <app-task-modal
           (close)="showNewTaskModal.set(false)"
@@ -191,23 +251,21 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
       flex-direction: column;
       gap: 1rem;
       padding: 1rem;
+      width: 100%;
     }
+
+    /* Top Banner Strip */
     .today-banner {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.85rem 1.1rem;
+      padding: 0.75rem 1.1rem;
       background: var(--bg-surface);
-      flex-wrap: wrap;
-      gap: 0.75rem;
     }
     .banner-left {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-    }
-    .banner-left h2 {
-      font-size: 1.15rem;
     }
     .banner-date {
       font-size: 0.85rem;
@@ -216,60 +274,84 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
     .banner-right {
       display: flex;
       align-items: center;
-      gap: 0.65rem;
     }
 
-    .quick-add-bar {
-      display: flex;
-      align-items: center;
-      gap: 0.65rem;
-      padding: 0.5rem 0.85rem;
-      background: var(--bg-surface-subtle);
-    }
-    .quick-input {
-      flex: 1;
-      border: none;
-      background: transparent;
-      font-size: 0.85rem;
-      color: var(--text-main);
-      outline: none;
-    }
-
-    .today-grid {
+    /* Row 1: 4 Stat Cards Grid */
+    .stats-row {
       display: grid;
-      grid-template-columns: 1fr 280px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+    .stat-card {
+      padding: 0.85rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .stat-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .stat-label {
+      font-size: 0.675rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+    .stat-icon {
+      font-size: 1rem;
+    }
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.1;
+    }
+    .stat-sub {
+      font-size: 0.725rem;
+      color: var(--text-muted);
+    }
+
+    /* Row 2 & 3: 2-Column Grid */
+    .dashboard-grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 1rem;
     }
     @media (max-width: 900px) {
-      .today-grid { grid-template-columns: 1fr; }
+      .dashboard-grid-2col {
+        grid-template-columns: 1fr;
+      }
     }
-    .grid-main, .grid-side {
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    .section-box, .side-box {
-      padding: 0.85rem 1rem;
+
+    .grid-card {
+      padding: 0.85rem 1.1rem;
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
     }
-    .box-header {
+    .card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       padding-bottom: 0.45rem;
       border-bottom: 1px solid var(--border-subtle);
     }
-    .box-header h3 {
+    .card-header h3 {
       font-size: 0.9rem;
       display: flex;
       align-items: center;
       gap: 0.45rem;
     }
-
-    .empty-state {
-      padding: 1.5rem;
+    .card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .empty-chart {
+      padding: 2.5rem 1rem;
       text-align: center;
       color: var(--text-muted);
       font-size: 0.8rem;
@@ -279,125 +361,207 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
       gap: 0.4rem;
     }
 
-    .task-list {
+    /* Donut/Pie Chart */
+    .donut-body {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-around;
+      gap: 1.5rem;
+      padding: 0.5rem 0;
+    }
+    @media (max-width: 500px) {
+      .donut-body { flex-direction: column; }
+    }
+    .donut-chart-container {
+      position: relative;
+      width: 130px;
+      height: 130px;
+      flex-shrink: 0;
+    }
+    .donut-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+    .donut-center-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
+      align-items: center;
+      pointer-events: none;
     }
-    .task-item-row {
+    .center-num {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1;
+    }
+    .center-lbl {
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .legend-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      flex: 1;
+    }
+    .legend-item {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.45rem 0.65rem;
+      font-size: 0.775rem;
+      padding: 0.25rem 0.45rem;
       background: var(--bg-surface-subtle);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-xs);
-      cursor: pointer;
-      transition: var(--transition-fast);
     }
-    .task-item-row:hover {
-      background: var(--bg-surface-hover);
-      border-color: var(--border-medium);
-    }
-    .task-item-row.urgent-row {
-      border-left: 3px solid var(--accent-rose);
-    }
-
-    .row-left {
+    .legend-left {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.45rem;
+    }
+    .legend-name { color: var(--text-main); }
+    .legend-right {
+      display: flex;
+      gap: 0.35rem;
+    }
+    .legend-cnt { font-weight: 700; }
+    .legend-pct { color: var(--text-muted); font-size: 0.7rem; }
+
+    /* Timeline Recent Activity */
+    .timeline-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      padding: 0.25rem 0;
+    }
+    .timeline-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.55rem;
+      font-size: 0.775rem;
+    }
+    .timeline-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-amber);
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .timeline-content {
+      display: flex;
+      flex-direction: column;
+    }
+    .act-text {
+      color: var(--text-main);
+      line-height: 1.3;
+    }
+    .act-time {
+      font-size: 0.675rem;
+      color: var(--text-muted);
+    }
+
+    /* Vertical Bars Priority Breakdown */
+    .vbars-body {
+      padding: 1rem 0 0.5rem 0;
+    }
+    .vbars-container {
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+      height: 140px;
+      padding-top: 1rem;
+    }
+    .vbar-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      height: 100%;
       flex: 1;
     }
-    .btn-check {
-      background: transparent;
-      border: none;
-      font-size: 0.95rem;
-      cursor: pointer;
-      padding: 0.1rem;
-      display: flex;
-    }
-    .task-title {
-      font-size: 0.825rem;
-      font-weight: 500;
+    .vbar-count {
+      font-size: 0.775rem;
+      font-weight: 700;
       color: var(--text-main);
     }
-    .task-title.completed {
-      text-decoration: line-through;
+    .vbar-track {
+      flex: 1;
+      width: 24px;
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+    .vbar-fill {
+      width: 100%;
+      border-radius: var(--radius-xs);
+      transition: height 0.3s ease;
+      min-height: 2px;
+    }
+    .vbar-label {
+      font-size: 0.7rem;
       color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
-    .row-right {
+    /* Horizontal Bars Types of Work */
+    .hbars-body {
+      padding: 0.5rem 0;
+    }
+    .hbars-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+    .hbar-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .hbar-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.775rem;
+    }
+    .type-name {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      font-size: 0.725rem;
+      gap: 0.4rem;
+      color: var(--text-main);
     }
-    .status-tag {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      padding: 0.1rem 0.4rem;
-      border-radius: var(--radius-xs);
-      color: var(--text-muted);
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
+    .type-count {
+      font-weight: 700;
+      color: var(--text-main);
     }
-    .due-tag {
-      color: var(--text-muted);
-    }
-
-    .progress-bar-track {
+    .hbar-track {
       width: 100%;
-      height: 6px;
+      height: 7px;
       background: var(--bg-surface-subtle);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-xs);
       overflow: hidden;
     }
-    .progress-bar-fill {
+    .hbar-fill {
       height: 100%;
-      background: var(--accent-emerald);
       transition: width 0.3s ease;
-    }
-    .stat-sub {
-      font-size: 0.725rem;
-      color: var(--text-muted);
-    }
-
-    .quick-ws-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
-    }
-    .quick-ws-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.4rem 0.6rem;
-      background: var(--bg-surface-subtle);
-      border: 1px solid var(--border-subtle);
-      border-radius: var(--radius-xs);
-      cursor: pointer;
-      font-size: 0.775rem;
-    }
-    .quick-ws-item:hover {
-      background: var(--bg-surface-hover);
-    }
-    .ws-item-left {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-    .ws-code {
-      font-weight: 700;
-      color: var(--text-muted);
+      min-width: 2px;
     }
   `]
 })
 export class TodayComponent {
-  quickTaskTitle = signal<string>('');
-  streakDays = 5;
   showNewTaskModal = signal<boolean>(false);
   activeDetailTask = signal<Task | null>(null);
 
@@ -412,59 +576,139 @@ export class TodayComponent {
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase();
   });
 
-  todayTasks = computed(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    return this.taskService.tasks().filter(t => t.due_date === todayStr || (!t.completed && t.status !== 'done'));
+  // Last 7 Days Calculations
+  completed7dCount = computed(() => {
+    const tasks = this.taskService.tasks();
+    return tasks.filter(t => t.completed || t.status.toLowerCase() === 'done').length;
   });
 
-  urgentOrOverdue = computed(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    return this.taskService.tasks().filter(t =>
-      !t.completed &&
-      t.status.toLowerCase() !== 'done' &&
-      (t.priority === 'urgent' || (t.due_date && t.due_date < todayStr))
-    );
+  updated7dCount = computed(() => {
+    const tasks = this.taskService.tasks();
+    const now = new Date().getTime();
+    const sevenDaysAgo = now - 7 * 86400000;
+    return tasks.filter(t => {
+      if (!t.updated_at) return true;
+      return new Date(t.updated_at).getTime() >= sevenDaysAgo;
+    }).length;
   });
 
-  totalCount = computed(() => this.taskService.tasks().length);
-  completedTodayCount = computed(() => this.taskService.tasks().filter(t => t.completed || t.status.toLowerCase() === 'done').length);
-  completionRate = computed(() => {
-    const tot = this.totalCount();
-    if (tot === 0) return 0;
-    return Math.round((this.completedTodayCount() / tot) * 100);
+  created7dCount = computed(() => {
+    const tasks = this.taskService.tasks();
+    const now = new Date().getTime();
+    const sevenDaysAgo = now - 7 * 86400000;
+    return tasks.filter(t => {
+      if (!t.created_at) return true;
+      return new Date(t.created_at).getTime() >= sevenDaysAgo;
+    }).length;
   });
 
-  async quickAddTask() {
-    const title = this.quickTaskTitle().trim();
-    if (!title) return;
+  dueSoonCount = computed(() => {
+    const tasks = this.taskService.tasks();
     const todayStr = new Date().toISOString().split('T')[0];
-    const defaultProj = this.projectService.projects()[0]?.id || '';
-    await this.taskService.createTask({
-      title,
-      project_id: defaultProj,
-      due_date: todayStr,
-      status: 'todo',
-      priority: 'medium',
-      type: 'task'
+    const sevenDaysAhead = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+    return tasks.filter(t => !t.completed && t.due_date && t.due_date >= todayStr && t.due_date <= sevenDaysAhead).length;
+  });
+
+  totalTaskCount = computed(() => this.taskService.tasks().length);
+
+  // Status Breakdown & Donut SVG calculation
+  statusCounts = computed(() => {
+    const tasks = this.taskService.tasks();
+    const total = tasks.length;
+    if (total === 0) return [];
+
+    const map: Record<string, { count: number; color: string }> = {
+      'Todo': { count: 0, color: '#8c857b' },
+      'In Progress': { count: 0, color: '#0284c7' },
+      'In Review': { count: 0, color: '#d97706' },
+      'Done': { count: 0, color: '#16a34a' }
+    };
+
+    tasks.forEach(t => {
+      const st = t.status || 'Todo';
+      if (map[st]) {
+        map[st].count++;
+      } else {
+        map['In Progress'].count++;
+      }
     });
-    this.quickTaskTitle.set('');
-  }
 
-  toggleTaskComplete(e: MouseEvent, t: Task) {
-    e.stopPropagation();
-    const nextStatus = t.completed ? 'todo' : 'done';
-    this.taskService.updateTask(t.id, { completed: !t.completed, status: nextStatus });
-  }
+    return Object.keys(map).map(k => {
+      const count = map[k].count;
+      const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+      return { name: k, count, percent, color: map[k].color };
+    });
+  });
 
-  openDetail(t: Task) {
-    this.activeDetailTask.set(t);
-  }
+  donutSegments = computed(() => {
+    const list = this.statusCounts();
+    const total = this.totalTaskCount();
+    if (total === 0) return [];
 
-  getDotClass(status: string): string {
-    const s = status.toLowerCase();
-    if (s.includes('done') || s.includes('complete')) return 'dot-emerald';
-    if (s.includes('prog') || s.includes('review')) return 'dot-cyan';
-    if (s.includes('urg')) return 'dot-rose';
-    return 'dot-neutral';
+    const circumference = 2 * Math.PI * 38; // ~238.76
+    let currentOffset = 0;
+
+    return list.map(st => {
+      const fraction = st.count / total;
+      const dashLength = fraction * circumference;
+      const dashArray = `${dashLength} ${circumference - dashLength}`;
+      const dashOffset = -currentOffset;
+      currentOffset += dashLength;
+
+      return {
+        name: st.name,
+        color: st.color,
+        dashArray,
+        dashOffset
+      };
+    });
+  });
+
+  // Recent Activity (Latest 5 Entries)
+  recentActivities = computed(() => {
+    return this.projectService.activities().slice(0, 5);
+  });
+
+  // Priority Breakdown
+  priorityCounts = computed(() => {
+    const tasks = this.taskService.tasks();
+    const total = tasks.length;
+
+    const priorities = [
+      { name: 'Urgent', key: 'urgent', color: '#dc2626' },
+      { name: 'High', key: 'high', color: '#d97706' },
+      { name: 'Medium', key: 'medium', color: '#0284c7' },
+      { name: 'Low', key: 'low', color: '#8c857b' }
+    ];
+
+    return priorities.map(p => {
+      const count = tasks.filter(t => t.priority === p.key).length;
+      const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+      return { name: p.name, count, percent, color: p.color };
+    });
+  });
+
+  // Types of Work
+  typeCounts = computed(() => {
+    const tasks = this.taskService.tasks();
+    const total = tasks.length;
+
+    const types = [
+      { name: 'Story', key: 'story', icon: 'fi fi-rr-book-alt', color: '#0284c7' },
+      { name: 'Bug', key: 'bug', icon: 'fi fi-rr-bug', color: '#dc2626' },
+      { name: 'Task', key: 'task', icon: 'fi fi-rr-check-circle', color: '#16a34a' },
+      { name: 'Epic', key: 'epic', icon: 'fi fi-rr-rocket-takeoff', color: '#7c3aed' }
+    ];
+
+    return types.map(tp => {
+      const count = tasks.filter(t => t.type === tp.key).length;
+      const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+      return { name: tp.name, count, percent, icon: tp.icon, color: tp.color };
+    });
+  });
+
+  formatDate(iso: string): string {
+    if (!iso) return '';
+    return new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 }

@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: 100%;
   background-color: var(--bg-canvas);
 }
 
@@ -18,6 +19,7 @@
   top: 0;
   z-index: 100;
   gap: 1rem;
+  width: 100%;
 }
 
 /* Header Left: System Name */
@@ -38,7 +40,7 @@
 /* Header Center: Command Palette Search Bar */
 .header-center {
   flex: 1;
-  max-width: 480px;
+  max-width: 560px;
   display: flex;
   justify-content: center;
 }
@@ -245,10 +247,15 @@
   font-size: 0.75rem;
 }
 
-/* Main Workspace Content Area */
+/* Main Workspace Content Area - Full Width Expansion */
 .app-main {
   flex: 1;
-  max-width: 1440px;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 /* Clean Paper Footer */
@@ -264,6 +271,7 @@
   color: var(--text-muted);
   flex-wrap: wrap;
   gap: 0.5rem;
+  width: 100%;
 }
 
 .footer-left {
