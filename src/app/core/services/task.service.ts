@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { SyncService } from './sync.service';
 import { Task, TaskComment } from '../models/project.model';
 
 @Injectable({
@@ -10,7 +11,10 @@ export class TaskService {
   taskComments = signal<Record<string, TaskComment[]>>({});
   loading = signal<boolean>(false);
 
-  constructor(private supabaseService: SupabaseService) {
+  constructor(
+    private supabaseService: SupabaseService,
+    private syncService: SyncService
+  ) {
     this.loadFromStorage();
     this.loadTasksFromSupabase();
   }
@@ -42,6 +46,8 @@ export class TaskService {
   }
 
   async loadTasksFromSupabase() {
+    if (!this.syncService.isOnline()) return;
+
     this.loading.set(true);
     try {
       const { data, error } = await this.supabaseService.supabase
@@ -80,41 +86,26 @@ export class TaskService {
       updated_at: new Date().toISOString()
     };
 
-    // Update signal state immediately
+    // Update signal state & local storage immediately
     this.tasks.update(list => [newTask, ...list]);
     this.saveToStorage();
 
-    // Async sync to Supabase database
-    try {
-      const { data, error } = await this.supabaseService.supabase
-        .from('tasks')
-        .insert([{
-          id: newTask.id,
-          project_id: newTask.project_id || null,
-          title: newTask.title,
-          description: newTask.description,
-          type: newTask.type,
-          status: newTask.status,
-          priority: newTask.priority,
-          labels: newTask.labels,
-          assignee: newTask.assignee,
-          due_date: newTask.due_date || null,
-          completed: newTask.completed
-        }])
-        .select();
+    // Queue mutation for sync
+    const payload = {
+      id: newTask.id,
+      project_id: newTask.project_id || null,
+      title: newTask.title,
+      description: newTask.description,
+      type: newTask.type,
+      status: newTask.status,
+      priority: newTask.priority,
+      labels: newTask.labels,
+      assignee: newTask.assignee,
+      due_date: newTask.due_date || null,
+      completed: newTask.completed
+    };
 
-      if (error) {
-        console.error('Supabase task insert error:', error);
-      } else if (data && data[0]) {
-        const inserted = data[0] as Task;
-        this.tasks.update(list => list.map(t => t.id === newId ? inserted : t));
-        this.saveToStorage();
-        return inserted;
-      }
-    } catch (e) {
-      console.warn('Supabase task sync warning:', e);
-    }
-
+    this.syncService.enqueue('CREATE_TASK', payload);
     return newTask;
   }
 
@@ -136,19 +127,7 @@ export class TaskService {
 
     if (updatedTask) {
       this.saveToStorage();
-    }
-
-    try {
-      const { error } = await this.supabaseService.supabase
-        .from('tasks')
-        .update(updatedFields)
-        .eq('id', id);
-
-      if (error) {
-        console.error('Supabase task update error:', error);
-      }
-    } catch (e) {
-      console.warn('Supabase task update warning:', e);
+      this.syncService.enqueue('UPDATE_TASK', { id, ...updatedFields });
     }
 
     return updatedTask;
@@ -157,34 +136,31 @@ export class TaskService {
   async deleteTask(id: string) {
     this.tasks.update(list => list.filter(t => t.id !== id));
     this.saveToStorage();
-
-    try {
-      await this.supabaseService.supabase.from('tasks').delete().eq('id', id);
-    } catch (e) {
-      console.warn('Supabase task delete warning:', e);
-    }
+    this.syncService.enqueue('DELETE_TASK', { id });
   }
 
-  // --- Task Comments ---
+  // --- Task Comments / Notes ---
 
   async loadCommentsForTask(taskId: string): Promise<TaskComment[]> {
-    try {
-      const { data, error } = await this.supabaseService.supabase
-        .from('task_comments')
-        .select('*')
-        .eq('task_id', taskId)
-        .order('created_at', { ascending: true });
+    if (this.syncService.isOnline()) {
+      try {
+        const { data, error } = await this.supabaseService.supabase
+          .from('task_comments')
+          .select('*')
+          .eq('task_id', taskId)
+          .order('created_at', { ascending: true });
 
-      if (!error && data) {
-        this.taskComments.update(map => ({
-          ...map,
-          [taskId]: data as TaskComment[]
-        }));
-        this.saveToStorage();
-        return data as TaskComment[];
+        if (!error && data) {
+          this.taskComments.update(map => ({
+            ...map,
+            [taskId]: data as TaskComment[]
+          }));
+          this.saveToStorage();
+          return data as TaskComment[];
+        }
+      } catch (e) {
+        console.warn('Could not load comments from Supabase', e);
       }
-    } catch (e) {
-      console.warn('Could not load comments from Supabase', e);
     }
 
     return this.taskComments()[taskId] || [];
@@ -206,13 +182,7 @@ export class TaskService {
     }));
     this.saveToStorage();
 
-    // Async sync to Supabase database
-    try {
-      await this.supabaseService.supabase.from('task_comments').insert([newComm]);
-    } catch (e) {
-      console.warn('Supabase comment insert warning:', e);
-    }
-
+    this.syncService.enqueue('ADD_COMMENT', newComm);
     return newComm;
   }
 
@@ -234,16 +204,7 @@ export class TaskService {
     });
 
     this.saveToStorage();
-
-    try {
-      await this.supabaseService.supabase
-        .from('task_comments')
-        .update({ content: newContent, updated_at: updatedAt })
-        .eq('id', commentId);
-    } catch (e) {
-      console.warn('Supabase comment update warning:', e);
-    }
-
+    this.syncService.enqueue('UPDATE_COMMENT', { id: commentId, content: newContent, updated_at: updatedAt });
     return updatedComment;
   }
 
@@ -257,15 +218,6 @@ export class TaskService {
     });
 
     this.saveToStorage();
-
-    try {
-      await this.supabaseService.supabase
-        .from('task_comments')
-        .delete()
-        .eq('id', commentId);
-    } catch (e) {
-      console.warn('Supabase comment delete warning:', e);
-    }
+    this.syncService.enqueue('DELETE_COMMENT', { id: commentId });
   }
 }
-

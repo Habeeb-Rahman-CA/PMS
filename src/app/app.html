@@ -10,7 +10,10 @@
       >
         <i [class]="mobileMenuOpen() ? 'fi fi-rr-cross' : 'fi fi-rr-menu-burger'"></i>
       </button>
-      <span class="status-dot dot-emerald" title="Workspace Active"></span>
+      <span
+        [class]="syncService.isOnline() ? 'status-dot dot-emerald' : 'status-dot dot-amber'"
+        [title]="syncService.isOnline() ? 'Network Online' : 'Offline Mode - Queueing mutations'"
+      ></span>
       <span class="brand-title">DEVFLOW</span>
     </div>
 
@@ -26,8 +29,13 @@
       </button>
     </div>
 
-    <!-- Right End: Help Icon -->
+    <!-- Right End: Offline Badge & Help Icon -->
     <div class="header-right font-mono">
+      @if (!syncService.isOnline()) {
+        <span class="badge-mono badge-amber" title="Offline Mode - Changes saved locally">
+          <i class="fi fi-rr-wifi-slash"></i> OFFLINE ({{ syncService.pendingSyncQueue().length }})
+        </span>
+      }
       <button
         class="btn btn-ghost btn-sm help-btn"
         (click)="workspaceService.toggleShortcutsModal()"
@@ -115,7 +123,14 @@
   <!-- Clean Paper Footer -->
   <footer class="app-footer paper-panel font-mono">
     <div class="footer-left">
-      <span class="status-dot dot-emerald"></span>
+      @if (syncService.isOnline()) {
+        <span class="status-dot dot-emerald"></span>
+        <span>ONLINE</span>
+      } @else {
+        <span class="status-dot dot-amber"></span>
+        <span class="text-amber">OFFLINE (QUEUED: {{ syncService.pendingSyncQueue().length }})</span>
+      }
+      <span class="footer-sep">•</span>
       <span>ACTIVE: {{ workspaceService.activeWorkspace() }}</span>
     </div>
 

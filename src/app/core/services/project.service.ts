@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { SupabaseService } from './supabase.service';
+import { SyncService } from './sync.service';
 import { Project, ProjectActivity, Task } from '../models/project.model';
 
 @Injectable({
@@ -12,7 +13,10 @@ export class ProjectService {
   activeProject = signal<Project | null>(null);
   loading = signal<boolean>(false);
 
-  constructor(private supabaseService: SupabaseService) {
+  constructor(
+    private supabaseService: SupabaseService,
+    private syncService: SyncService
+  ) {
     this.loadFromStorage();
     this.loadFromSupabase();
   }
@@ -45,6 +49,8 @@ export class ProjectService {
   }
 
   async loadFromSupabase() {
+    if (!this.syncService.isOnline()) return;
+
     this.loading.set(true);
     try {
       const { data, error } = await this.supabaseService.supabase
@@ -91,35 +97,18 @@ export class ProjectService {
     this.logActivity(newProj.id, 'Created', `Project "${newProj.name}" created`);
     this.saveToStorage();
 
-    // Async sync to Supabase PostgreSQL database
-    try {
-      const { data, error } = await this.supabaseService.supabase
-        .from('projects')
-        .insert([{
-          id: newProj.id,
-          name: newProj.name,
-          slug: newProj.slug,
-          description: newProj.description,
-          repository_url: newProj.repository_url,
-          status: newProj.status,
-          labels: newProj.labels,
-          color: newProj.color
-        }])
-        .select();
+    const payload = {
+      id: newProj.id,
+      name: newProj.name,
+      slug: newProj.slug,
+      description: newProj.description,
+      repository_url: newProj.repository_url,
+      status: newProj.status,
+      labels: newProj.labels,
+      color: newProj.color
+    };
 
-      if (error) {
-        console.error('Supabase project insert error:', error);
-      } else if (data && data[0]) {
-        const inserted = data[0] as Project;
-        this.projects.update(list => list.map(p => p.id === generatedId ? inserted : p));
-        if (this.activeProject()?.id === generatedId) this.activeProject.set(inserted);
-        this.saveToStorage();
-        return inserted;
-      }
-    } catch (e) {
-      console.warn('Supabase sync warning:', e);
-    }
-
+    this.syncService.enqueue('CREATE_PROJECT', payload);
     return newProj;
   }
 
@@ -142,28 +131,18 @@ export class ProjectService {
       if (this.activeProject()?.id === id) this.activeProject.set(updatedProj);
       this.logActivity(id, 'Updated', `Project metadata updated`);
       this.saveToStorage();
-    }
 
-    try {
-      const { error } = await this.supabaseService.supabase
-        .from('projects')
-        .update({
-          name: updates.name,
-          slug: updates.name ? updates.name.toLowerCase().replace(/\s+/g, '-') : undefined,
-          description: updates.description,
-          repository_url: updates.repository_url,
-          status: updates.status,
-          labels: updates.labels,
-          color: updates.color,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (error) {
-        console.error('Supabase update error:', error);
-      }
-    } catch (e) {
-      console.warn('Supabase update error:', e);
+      this.syncService.enqueue('UPDATE_PROJECT', {
+        id,
+        name: updates.name,
+        slug: updates.name ? updates.name.toLowerCase().replace(/\s+/g, '-') : undefined,
+        description: updates.description,
+        repository_url: updates.repository_url,
+        status: updates.status,
+        labels: updates.labels,
+        color: updates.color,
+        updated_at: new Date().toISOString()
+      });
     }
 
     return updatedProj;
@@ -190,19 +169,7 @@ export class ProjectService {
     }
 
     this.saveToStorage();
-
-    try {
-      const { error } = await this.supabaseService.supabase
-        .from('projects')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('Supabase delete error:', error);
-      }
-    } catch (e) {
-      console.warn('Supabase delete error:', e);
-    }
+    this.syncService.enqueue('DELETE_PROJECT', { id });
   }
 
   logActivity(projectId: string, action: string, description: string) {

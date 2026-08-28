@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { WorkspaceService, WorkspaceSection } from './core/services/workspace.service';
+import { SyncService } from './core/services/sync.service';
 import { TodayComponent } from './features/today/today';
 import { ProjectsComponent } from './features/projects/projects';
 import { TasksComponent } from './features/tasks/tasks';
@@ -33,7 +34,10 @@ export class App {
   sidebarCollapsed = signal<boolean>(false);
   mobileMenuOpen = signal<boolean>(false);
 
-  constructor(public workspaceService: WorkspaceService) {}
+  constructor(
+    public workspaceService: WorkspaceService,
+    public syncService: SyncService
+  ) {}
 
   toggleSidebar() {
     this.sidebarCollapsed.update(v => !v);
