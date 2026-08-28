@@ -221,68 +221,181 @@ export class ArchiveComponent {
 
   activities = computed(() => this.projectService.activities());
 
+  private createStyledSheet(
+    headers: string[],
+    descriptions: string[],
+    dataRows: (string | number)[][]
+  ): XLSX.WorkSheet {
+    const ws: XLSX.WorkSheet = {};
+
+    // 1. Row 1: Header Row (Bold white text on dark background)
+    headers.forEach((h, colIdx) => {
+      const cellRef = XLSX.utils.encode_cell({ r: 0, c: colIdx });
+      ws[cellRef] = {
+        v: h,
+        t: 's',
+        s: {
+          font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11, name: 'Calibri' },
+          fill: { fgColor: { rgb: '1C1917' } },
+          alignment: { vertical: 'center', horizontal: 'left' }
+        }
+      };
+    });
+
+    // 2. Row 2: Field Description Row (Italic light grey text on soft background)
+    descriptions.forEach((desc, colIdx) => {
+      const cellRef = XLSX.utils.encode_cell({ r: 1, c: colIdx });
+      ws[cellRef] = {
+        v: desc,
+        t: 's',
+        s: {
+          font: { italic: true, color: { rgb: '78716C' }, sz: 9, name: 'Calibri' },
+          fill: { fgColor: { rgb: 'F3F0E6' } },
+          alignment: { vertical: 'center', horizontal: 'left' }
+        }
+      };
+    });
+
+    // 3. Row 3+: Data Rows
+    dataRows.forEach((row, rowIdx) => {
+      row.forEach((val, colIdx) => {
+        const cellRef = XLSX.utils.encode_cell({ r: rowIdx + 2, c: colIdx });
+        const isNum = typeof val === 'number';
+        ws[cellRef] = {
+          v: val ?? '',
+          t: isNum ? 'n' : 's',
+          s: {
+            font: { sz: 10, name: 'Calibri', color: { rgb: '1C1917' } },
+            alignment: { vertical: 'center', horizontal: isNum ? 'right' : 'left' }
+          }
+        };
+      });
+    });
+
+    // Range bounds definition
+    const totalRows = dataRows.length + 2;
+    const totalCols = headers.length;
+    ws['!ref'] = XLSX.utils.encode_range(
+      { r: 0, c: 0 },
+      { r: Math.max(totalRows - 1, 1), c: totalCols - 1 }
+    );
+
+    // Auto Column Widths calculation
+    ws['!cols'] = headers.map((h, colIdx) => {
+      let maxLen = Math.max(h.length, (descriptions[colIdx] || '').length);
+      dataRows.forEach(r => {
+        const str = String(r[colIdx] ?? '');
+        if (str.length > maxLen) maxLen = str.length;
+      });
+      return { wch: Math.min(Math.max(maxLen + 4, 15), 55) };
+    });
+
+    return ws;
+  }
+
   exportData() {
     const wb = XLSX.utils.book_new();
 
     // 1. Sheet: Completed Tasks
-    const completedRows = this.completedTasks().map(t => ({
-      'Task ID': `TASK-${t.id.slice(0, 4).toUpperCase()}`,
-      'Title / Summary': t.title,
-      'Issue Type': (t.type || 'task').toUpperCase(),
-      'Priority': (t.priority || 'medium').toUpperCase(),
-      'Status': 'COMPLETED',
-      'Project Name': this.getProjectName(t.project_id),
-      'Assignee': t.assignee || 'Unassigned',
-      'Due Date': t.due_date || 'N/A',
-      'Created Date': t.created_at ? new Date(t.created_at).toLocaleDateString() : 'N/A'
-    }));
-    const completedWs = XLSX.utils.json_to_sheet(completedRows);
+    const completedHeaders = ['Task ID', 'Title / Summary', 'Issue Type', 'Priority', 'Status', 'Project Name', 'Assignee', 'Due Date', 'Created Date'];
+    const completedDescriptions = [
+      'Unique task identifier code',
+      'Brief summary title of completed work',
+      'Work category (Task, Bug, Story, Epic)',
+      'Urgency priority level',
+      'Completion status state',
+      'Parent project repository',
+      'Assigned team member',
+      'Target due date (YYYY-MM-DD)',
+      'Timestamp when task was logged'
+    ];
+    const completedRows = this.completedTasks().map(t => [
+      `TASK-${t.id.slice(0, 4).toUpperCase()}`,
+      t.title,
+      (t.type || 'task').toUpperCase(),
+      (t.priority || 'medium').toUpperCase(),
+      'COMPLETED',
+      this.getProjectName(t.project_id),
+      t.assignee || 'Unassigned',
+      t.due_date || 'N/A',
+      t.created_at ? new Date(t.created_at).toLocaleDateString() : 'N/A'
+    ]);
+    const completedWs = this.createStyledSheet(completedHeaders, completedDescriptions, completedRows);
     XLSX.utils.book_append_sheet(wb, completedWs, 'Completed Tasks');
 
     // 2. Sheet: All Workspace Tasks
-    const allTaskRows = this.taskService.tasks().map(t => ({
-      'Task ID': `TASK-${t.id.slice(0, 4).toUpperCase()}`,
-      'Title / Summary': t.title,
-      'Issue Type': (t.type || 'task').toUpperCase(),
-      'Priority': (t.priority || 'medium').toUpperCase(),
-      'Status': t.status.toUpperCase(),
-      'Completed': t.completed ? 'YES' : 'NO',
-      'Project Name': this.getProjectName(t.project_id),
-      'Assignee': t.assignee || 'Unassigned',
-      'Due Date': t.due_date || 'N/A',
-      'Created Date': t.created_at ? new Date(t.created_at).toLocaleDateString() : 'N/A'
-    }));
-    const allTasksWs = XLSX.utils.json_to_sheet(allTaskRows);
+    const allHeaders = ['Task ID', 'Title / Summary', 'Issue Type', 'Priority', 'Status', 'Completed', 'Project Name', 'Assignee', 'Due Date', 'Created Date'];
+    const allDescriptions = [
+      'Unique task identifier code',
+      'Brief summary title of work item',
+      'Work category (Task, Bug, Story, Epic)',
+      'Urgency priority level',
+      'Current workflow state (Todo, In Progress, Done)',
+      'Completion status indicator (YES/NO)',
+      'Parent project repository',
+      'Assigned team member',
+      'Target due date (YYYY-MM-DD)',
+      'Timestamp when task was logged'
+    ];
+    const allTaskRows = this.taskService.tasks().map(t => [
+      `TASK-${t.id.slice(0, 4).toUpperCase()}`,
+      t.title,
+      (t.type || 'task').toUpperCase(),
+      (t.priority || 'medium').toUpperCase(),
+      t.status.toUpperCase(),
+      t.completed ? 'YES' : 'NO',
+      this.getProjectName(t.project_id),
+      t.assignee || 'Unassigned',
+      t.due_date || 'N/A',
+      t.created_at ? new Date(t.created_at).toLocaleDateString() : 'N/A'
+    ]);
+    const allTasksWs = this.createStyledSheet(allHeaders, allDescriptions, allTaskRows);
     XLSX.utils.book_append_sheet(wb, allTasksWs, 'All Tasks');
 
     // 3. Sheet: Projects Summary
+    const projectHeaders = ['Project Key', 'Project Name', 'Description', 'Status', 'Total Tasks', 'Completed Tasks', 'Progress (%)'];
+    const projectDescriptions = [
+      'Unique project code identifier',
+      'Name of repository project',
+      'Project overview and objectives',
+      'Lifecycle status (Active, Completed)',
+      'Total count of assigned tasks',
+      'Count of finished tasks',
+      'Calculated completion percentage'
+    ];
     const projectRows = this.projectService.projects().map(p => {
       const pTasks = this.taskService.tasks().filter(t => t.project_id === p.id);
       const pDone = pTasks.filter(t => t.completed || t.status.toLowerCase() === 'done').length;
       const progress = pTasks.length > 0 ? Math.round((pDone / pTasks.length) * 100) : 0;
-      return {
-        'Project Key': `PROJ-${p.id.slice(0, 4).toUpperCase()}`,
-        'Project Name': p.name,
-        'Description': p.description || '',
-        'Status': p.status.toUpperCase(),
-        'Total Tasks': pTasks.length,
-        'Completed Tasks': pDone,
-        'Progress (%)': `${progress}%`
-      };
+      return [
+        `PROJ-${p.id.slice(0, 4).toUpperCase()}`,
+        p.name,
+        p.description || '',
+        p.status.toUpperCase(),
+        pTasks.length,
+        pDone,
+        `${progress}%`
+      ];
     });
-    const projectsWs = XLSX.utils.json_to_sheet(projectRows);
+    const projectsWs = this.createStyledSheet(projectHeaders, projectDescriptions, projectRows);
     XLSX.utils.book_append_sheet(wb, projectsWs, 'Projects Summary');
 
     // 4. Sheet: Activity Log Stream
-    const activityRows = this.activities().map(act => ({
-      'Action': act.action,
-      'Description': act.description,
-      'Timestamp': this.formatDate(act.timestamp)
-    }));
-    const activitiesWs = XLSX.utils.json_to_sheet(activityRows);
+    const activityHeaders = ['Action', 'Description', 'Timestamp'];
+    const activityDescriptions = [
+      'Operation type (Created, Updated, Deleted)',
+      'Detailed log event description',
+      'Date and time when action occurred'
+    ];
+    const activityRows = this.activities().map(act => [
+      act.action,
+      act.description,
+      this.formatDate(act.timestamp)
+    ]);
+    const activitiesWs = this.createStyledSheet(activityHeaders, activityDescriptions, activityRows);
     XLSX.utils.book_append_sheet(wb, activitiesWs, 'Activity Stream');
 
-    // Generate & download .xlsx file
+    // Generate & download formatted .xlsx file
     const filename = `devflow-workspace-export-${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, filename);
   }
