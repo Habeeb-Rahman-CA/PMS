@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
 import { WorkflowService } from '../../core/services/workflow.service';
+import { TaskShareService } from '../../core/services/task-share.service';
 import { Task, TaskComment, Workflow } from '../../core/models/project.model';
 import { getTaskKey } from '../../core/utils/task-key.util';
 
@@ -20,8 +21,12 @@ import { getTaskKey } from '../../core/utils/task-key.util';
             <span class="badge" [class]="'badge-' + task.type">
               <i [class]="getTypeIcon(task.type)"></i> {{ task.type }}
             </span>
-            <span class="task-key-badge font-mono">
-              {{ getTaskKeyStr(task) }}
+            <span
+              class="task-key-badge font-mono clickable-key"
+              (click)="taskShareService.copyTaskShareLink(task, $event)"
+              title="Click to copy share link"
+            >
+              <i class="fi fi-rr-link link-icon"></i> {{ getTaskKeyStr(task) }}
             </span>
             <span class="priority-badge" [class]="(task.priority || 'medium').toLowerCase()">
               {{ task.priority || 'medium' }}
@@ -207,6 +212,9 @@ import { getTaskKey } from '../../core/utils/task-key.util';
             </div>
 
             <div class="meta-actions">
+              <button class="btn btn-secondary btn-sm full-width" (click)="taskShareService.copyTaskShareLink(task, $event)">
+                <i class="fi fi-rr-share"></i> Copy Share Link
+              </button>
               <button class="btn btn-secondary btn-sm full-width" (click)="editTask.emit(task)">
                 <i class="fi fi-rr-edit"></i> Edit Task
               </button>
@@ -532,7 +540,8 @@ export class TaskDetailModalComponent implements OnInit {
   constructor(
     private taskService: TaskService,
     private projectService: ProjectService,
-    private workflowService: WorkflowService
+    private workflowService: WorkflowService,
+    public taskShareService: TaskShareService
   ) {}
 
   async ngOnInit() {

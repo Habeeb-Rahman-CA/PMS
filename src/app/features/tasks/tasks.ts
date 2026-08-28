@@ -6,6 +6,7 @@ import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
 import { WorkflowService } from '../../core/services/workflow.service';
 import { WorkspaceService } from '../../core/services/workspace.service';
+import { TaskShareService } from '../../core/services/task-share.service';
 import { Project, Task, Workflow } from '../../core/models/project.model';
 import { getTaskKey } from '../../core/utils/task-key.util';
 import { TaskModalComponent } from '../../shared/components/task-modal';
@@ -196,8 +197,12 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
                         <span class="badge-type" [class]="t.type">
                           <i [class]="getTypeIcon(t.type)"></i> {{ t.type }}
                         </span>
-                        <span class="task-key font-mono">
-                          {{ getTaskKeyStr(t) }}
+                        <span
+                          class="task-key font-mono clickable-key"
+                          (click)="taskShareService.copyTaskShareLink(t, $event)"
+                          title="Click to copy share link"
+                        >
+                          {{ getTaskKeyStr(t) }} <i class="fi fi-rr-link link-icon"></i>
                         </span>
                         <span class="priority-badge" [class]="(t.priority || 'medium').toLowerCase()">
                           {{ t.priority || 'medium' }}
@@ -548,7 +553,8 @@ export class TasksComponent {
     public taskService: TaskService,
     public projectService: ProjectService,
     public workflowService: WorkflowService,
-    public workspaceService: WorkspaceService
+    public workspaceService: WorkspaceService,
+    public taskShareService: TaskShareService
   ) {
     const projList = this.projectService.projects();
     if (projList.length > 0) {

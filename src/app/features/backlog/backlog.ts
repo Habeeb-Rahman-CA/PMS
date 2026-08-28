@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
 import { WorkspaceService } from '../../core/services/workspace.service';
+import { TaskShareService } from '../../core/services/task-share.service';
 import { Task } from '../../core/models/project.model';
 import { getTaskKey } from '../../core/utils/task-key.util';
 import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
@@ -186,8 +187,12 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
                 </div>
 
                 <!-- Task Key / Identifier -->
-                <div class="cell-key font-mono">
-                  <span>{{ getTaskKeyStr(t) }}</span>
+                <div
+                  class="cell-key font-mono clickable-key"
+                  (click)="taskShareService.copyTaskShareLink(t, $event)"
+                  title="Click to copy share link"
+                >
+                  <span>{{ getTaskKeyStr(t) }} <i class="fi fi-rr-link link-icon"></i></span>
                 </div>
 
                 <!-- Title / Summary -->
@@ -584,7 +589,8 @@ export class BacklogComponent implements OnInit {
   constructor(
     public taskService: TaskService,
     public projectService: ProjectService,
-    public workspaceService: WorkspaceService
+    public workspaceService: WorkspaceService,
+    public taskShareService: TaskShareService
   ) {}
 
   getTaskKeyStr(t: Task): string {

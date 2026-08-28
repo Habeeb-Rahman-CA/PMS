@@ -158,4 +158,25 @@
   @if (workspaceService.globalCreateTaskModalOpen()) {
   <app-task-modal (close)="workspaceService.closeCreateTaskModal()" />
   }
+
+  <!-- Deep Link Shared Task Detail Modal -->
+  @if (taskShareService.activeSharedTask(); as sharedTask) {
+  <app-task-detail-modal
+    [task]="sharedTask"
+    (close)="taskShareService.closeSharedTaskModal()"
+    (editTask)="onEditSharedTask($event)"
+  />
+  }
+
+  @if (editingSharedTask()) {
+  <app-task-modal [taskToEdit]="editingSharedTask()" (close)="closeEditSharedModal()" />
+  }
+
+  <!-- Toast Notification for Copy Share Link -->
+  @if (taskShareService.toastMessage(); as msg) {
+  <div class="task-share-toast paper-panel font-mono">
+    <i class="fi fi-rr-check-circle text-emerald"></i>
+    <span>{{ msg }}</span>
+  </div>
+  }
 </div>

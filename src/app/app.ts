@@ -13,6 +13,10 @@ import { CommandPaletteComponent } from './shared/components/command-palette';
 import { ShortcutsModalComponent } from './shared/components/shortcuts-modal';
 import { TaskModalComponent } from './shared/components/task-modal';
 
+import { TaskShareService } from './core/services/task-share.service';
+import { TaskDetailModalComponent } from './shared/components/task-detail-modal';
+import { Task } from './core/models/project.model';
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -26,7 +30,8 @@ import { TaskModalComponent } from './shared/components/task-modal';
     ArchiveComponent,
     CommandPaletteComponent,
     ShortcutsModalComponent,
-    TaskModalComponent
+    TaskModalComponent,
+    TaskDetailModalComponent
   ],
   templateUrl: './app.html',
   styleUrl: './app.css'
@@ -34,11 +39,13 @@ import { TaskModalComponent } from './shared/components/task-modal';
 export class App {
   sidebarCollapsed = signal<boolean>(false);
   mobileMenuOpen = signal<boolean>(false);
+  editingSharedTask = signal<Task | null>(null);
 
   constructor(
     public workspaceService: WorkspaceService,
     public syncService: SyncService,
-    public updateService: UpdateService
+    public updateService: UpdateService,
+    public taskShareService: TaskShareService
   ) {}
 
   toggleSidebar() {
@@ -48,5 +55,14 @@ export class App {
   selectWorkspace(wsId: WorkspaceSection) {
     this.workspaceService.setWorkspace(wsId);
     this.mobileMenuOpen.set(false);
+  }
+
+  onEditSharedTask(task: Task) {
+    this.editingSharedTask.set(task);
+    this.taskShareService.closeSharedTaskModal();
+  }
+
+  closeEditSharedModal() {
+    this.editingSharedTask.set(null);
   }
 }
