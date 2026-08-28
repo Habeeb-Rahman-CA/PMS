@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 
-export type WorkspaceSection = '01 TODAY' | '02 PROJECTS' | '03 TASKS' | '04 ARCHIVE';
+export type WorkspaceSection = '01 TODAY' | '02 PROJECTS' | '03 TASKS' | '04 BACKLOG' | '05 ARCHIVE';
 
 export interface WorkspaceItem {
   id: WorkspaceSection;
@@ -20,10 +20,11 @@ export class WorkspaceService {
   shortcutsModalOpen = signal<boolean>(false);
 
   readonly workspaces: WorkspaceItem[] = [
-    { id: '01 TODAY', key: '1', name: 'TODAY', code: '01', icon: 'fi fi-rr-sun', desc: 'Focus dashboard & today due items' },
+    { id: '01 TODAY', key: '1', name: 'TODAY', code: '01', icon: 'fi fi-rr-sun', desc: 'Focus dashboard & metrics' },
     { id: '02 PROJECTS', key: '2', name: 'PROJECTS', code: '02', icon: 'fi fi-rr-folder', desc: 'Project overview & metrics' },
     { id: '03 TASKS', key: '3', name: 'TASKS', code: '03', icon: 'fi fi-rr-check-square', desc: 'Kanban workflow board & issue tracker' },
-    { id: '04 ARCHIVE', key: '4', name: 'ARCHIVE', code: '04', icon: 'fi fi-rr-box-alt', desc: 'Completed task history & exports' }
+    { id: '04 BACKLOG', key: '4', name: 'BACKLOG', code: '04', icon: 'fi fi-rr-list-check', desc: 'Jira-style task backlog with comprehensive filters' },
+    { id: '05 ARCHIVE', key: '5', name: 'ARCHIVE', code: '05', icon: 'fi fi-rr-box-alt', desc: 'Completed task history & exports' }
   ];
 
   constructor() {
@@ -76,8 +77,8 @@ export class WorkspaceService {
 
       if (isInput) return;
 
-      // Numeric shortcuts 1-4 for switching workspace
-      if (['1', '2', '3', '4'].includes(e.key)) {
+      // Numeric shortcuts 1-5 for switching workspace
+      if (['1', '2', '3', '4', '5'].includes(e.key)) {
         const item = this.workspaces.find(w => w.key === e.key);
         if (item) {
           e.preventDefault();

@@ -1,0 +1,781 @@
+import { Component, signal, computed, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TaskService } from '../../core/services/task.service';
+import { ProjectService } from '../../core/services/project.service';
+import { WorkspaceService } from '../../core/services/workspace.service';
+import { Task } from '../../core/models/project.model';
+import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
+import { TaskModalComponent } from '../../shared/components/task-modal';
+
+@Component({
+  selector: 'app-backlog',
+  standalone: true,
+  imports: [CommonModule, FormsModule, TaskDetailModalComponent, TaskModalComponent],
+  template: `
+    <div class="backlog-workspace font-mono">
+      <!-- Top Banner Bar -->
+      <div class="backlog-banner paper-panel">
+        <div class="banner-left">
+          <span class="badge-mono">04 BACKLOG</span>
+          <h2>Task Backlog</h2>
+          <span class="banner-count font-mono">{{ filteredTasks().length }} of {{ allTasks().length }} Tasks</span>
+        </div>
+
+        <div class="banner-right">
+          <button class="btn btn-primary btn-sm" (click)="showCreateModal.set(true)">
+            <i class="fi fi-rr-plus"></i> Create Task <span class="key-badge">N</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter & Search Toolbar -->
+      <div class="filter-toolbar paper-panel">
+        <div class="search-box">
+          <i class="fi fi-rr-search search-icon"></i>
+          <input
+            type="text"
+            class="search-input font-mono"
+            placeholder="Search tasks by key, title, description..."
+            [(ngModel)]="searchQuery"
+          />
+          @if (searchQuery()) {
+            <button class="btn-clear" (click)="searchQuery.set('')"><i class="fi fi-rr-cross"></i></button>
+          }
+        </div>
+
+        <div class="filter-dropdowns">
+          <!-- Project Filter -->
+          <div class="filter-group">
+            <span class="filter-label">PROJECT:</span>
+            <select class="filter-select font-mono" [(ngModel)]="selectedProject">
+              <option value="ALL">All Projects</option>
+              @for (proj of projectService.projects(); track proj.id) {
+                <option [value]="proj.id">{{ proj.name }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Type Filter -->
+          <div class="filter-group">
+            <span class="filter-label">TYPE:</span>
+            <select class="filter-select font-mono" [(ngModel)]="selectedType">
+              <option value="ALL">All Types</option>
+              <option value="story">Story</option>
+              <option value="bug">Bug</option>
+              <option value="task">Task</option>
+              <option value="epic">Epic</option>
+            </select>
+          </div>
+
+          <!-- Priority Filter -->
+          <div class="filter-group">
+            <span class="filter-label">PRIORITY:</span>
+            <select class="filter-select font-mono" [(ngModel)]="selectedPriority">
+              <option value="ALL">All Priorities</option>
+              <option value="urgent">Urgent</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+
+          <!-- Status Filter -->
+          <div class="filter-group">
+            <span class="filter-label">STATUS:</span>
+            <select class="filter-select font-mono" [(ngModel)]="selectedStatus">
+              <option value="ALL">All Statuses</option>
+              <option value="todo">Todo</option>
+              <option value="in_progress">In Progress</option>
+              <option value="review">In Review</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+
+          <!-- Sort By -->
+          <div class="filter-group">
+            <span class="filter-label">SORT:</span>
+            <select class="filter-select font-mono" [(ngModel)]="sortBy">
+              <option value="priority">Priority</option>
+              <option value="due_date">Due Date</option>
+              <option value="title">Title</option>
+              <option value="created_at">Created Date</option>
+            </select>
+          </div>
+
+          @if (hasActiveFilters()) {
+            <button class="btn btn-ghost btn-xs reset-btn" (click)="resetFilters()" title="Reset all filters">
+              <i class="fi fi-rr-rotate-left"></i> Reset Filters
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Batch Selection Bar -->
+      @if (selectedTaskIds().length > 0) {
+        <div class="batch-bar paper-panel font-mono">
+          <span class="batch-text">{{ selectedTaskIds().length }} tasks selected</span>
+          <div class="batch-actions">
+            <button class="btn btn-secondary btn-xs" (click)="batchUpdateStatus('done')">
+              <i class="fi fi-rr-check text-emerald"></i> Mark Done
+            </button>
+            <button class="btn btn-secondary btn-xs" (click)="batchUpdatePriority('urgent')">
+              <i class="fi fi-rr-angle-up text-rose"></i> Set Urgent
+            </button>
+            <button class="btn btn-ghost btn-xs text-rose" (click)="batchDelete()">
+              <i class="fi fi-rr-trash"></i> Delete
+            </button>
+            <button class="btn btn-ghost btn-xs" (click)="clearSelection()">Clear Selection</button>
+          </div>
+        </div>
+      }
+
+      <!-- Unified Backlog Table Container -->
+      <div class="backlog-table-container paper-panel">
+        <!-- Table Header -->
+        <div class="table-header-row font-mono">
+          <div class="cell-check">
+            <input
+              type="checkbox"
+              [checked]="isAllSelected()"
+              (change)="toggleSelectAll()"
+              title="Select all tasks"
+            />
+          </div>
+          <div class="cell-type">TYPE</div>
+          <div class="cell-key">KEY</div>
+          <div class="cell-summary">TITLE / SUMMARY</div>
+          <div class="cell-project">PROJECT</div>
+          <div class="cell-priority">PRIORITY</div>
+          <div class="cell-status">STATUS</div>
+          <div class="cell-due">DUE DATE</div>
+          <div class="cell-actions">ACTIONS</div>
+        </div>
+
+        <!-- Table Body -->
+        <div class="table-body">
+          @if (filteredTasks().length === 0) {
+            <div class="empty-backlog font-mono">
+              <i class="fi fi-rr-search text-muted"></i>
+              <span>No tasks found matching current filters.</span>
+              @if (hasActiveFilters()) {
+                <button class="btn btn-secondary btn-xs margin-top" (click)="resetFilters()">Clear Filters</button>
+              }
+            </div>
+          } @else {
+            @for (t of filteredTasks(); track t.id) {
+              <div
+                class="task-table-row"
+                [class.selected]="isTaskSelected(t.id)"
+                (click)="openDetail(t)"
+              >
+                <!-- Checkbox -->
+                <div class="cell-check" (click)="$event.stopPropagation()">
+                  <input
+                    type="checkbox"
+                    [checked]="isTaskSelected(t.id)"
+                    (change)="toggleSelectTask(t.id)"
+                  />
+                </div>
+
+                <!-- Type Icon & Label -->
+                <div class="cell-type" [title]="'Type: ' + (t.type || 'task')">
+                  <i [class]="getTypeIcon(t.type)" [style.color]="getTypeColor(t.type)"></i>
+                  <span class="type-name">{{ t.type || 'task' }}</span>
+                </div>
+
+                <!-- Task Key / Identifier -->
+                <div class="cell-key font-mono">
+                  <span>TASK-{{ t.id.slice(0, 4).toUpperCase() }}</span>
+                </div>
+
+                <!-- Title / Summary -->
+                <div class="cell-summary">
+                  <span class="summary-text" [class.completed]="t.completed || isDone(t.status)">{{ t.title }}</span>
+                </div>
+
+                <!-- Project -->
+                <div class="cell-project">
+                  <span class="project-pill font-mono">{{ getProjectName(t.project_id) }}</span>
+                </div>
+
+                <!-- Priority -->
+                <div class="cell-priority font-mono">
+                  <span class="priority-badge" [class]="(t.priority || 'medium').toLowerCase()">
+                    {{ t.priority || 'medium' }}
+                  </span>
+                </div>
+
+                <!-- Status Select -->
+                <div class="cell-status font-mono" (click)="$event.stopPropagation()">
+                  <select
+                    class="status-select font-mono"
+                    [ngModel]="normalizeStatus(t.status)"
+                    (ngModelChange)="updateStatus(t.id, $event)"
+                  >
+                    <option value="todo">Todo</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="review">In Review</option>
+                    <option value="done">Done</option>
+                  </select>
+                </div>
+
+                <!-- Due Date -->
+                <div class="cell-due font-mono">
+                  @if (t.due_date) {
+                    <span class="due-pill" [class.overdue]="isOverdue(t)">
+                      <i class="fi fi-rr-calendar"></i> {{ t.due_date }}
+                    </span>
+                  } @else {
+                    <span class="no-due">-</span>
+                  }
+                </div>
+
+                <!-- Actions -->
+                <div class="cell-actions" (click)="$event.stopPropagation()">
+                  <button class="action-btn" (click)="deleteTask(t.id)" title="Delete task">
+                    <i class="fi fi-rr-trash text-rose"></i>
+                  </button>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+
+      <!-- Task Modals -->
+      @if (showCreateModal()) {
+        <app-task-modal
+          (close)="showCreateModal.set(false)"
+        ></app-task-modal>
+      }
+
+      @if (activeDetailTask(); as dt) {
+        <app-task-detail-modal
+          [task]="dt"
+          (close)="activeDetailTask.set(null)"
+        ></app-task-detail-modal>
+      }
+    </div>
+  `,
+  styles: [`
+    .backlog-workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem;
+      width: 100%;
+    }
+
+    /* Top Banner Bar */
+    .backlog-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1.1rem;
+      background: var(--bg-surface);
+    }
+    .banner-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .banner-left h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .banner-count {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .banner-right {
+      display: flex;
+      align-items: center;
+    }
+
+    /* Filter & Search Toolbar */
+    .filter-toolbar {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      background: var(--bg-surface-subtle);
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      padding: 0.4rem 0.75rem;
+    }
+    .search-icon {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .search-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 0.825rem;
+      color: var(--text-main);
+      outline: none;
+    }
+    .btn-clear {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+
+    .filter-dropdowns {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+    }
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .filter-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+    .filter-select {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      color: var(--text-main);
+      outline: none;
+      cursor: pointer;
+    }
+    .filter-select:hover {
+      border-color: var(--border-medium);
+    }
+    .reset-btn {
+      color: var(--accent-rose);
+    }
+
+    /* Batch Selection Bar */
+    .batch-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 1rem;
+      background: var(--text-main);
+      color: var(--bg-canvas);
+      border-radius: var(--radius-xs);
+    }
+    .batch-text {
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .batch-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Unified Backlog Table */
+    .backlog-table-container {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-surface);
+    }
+
+    .table-header-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 1rem;
+      background: var(--bg-surface-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.675rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .table-body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .empty-backlog {
+      padding: 3rem 1rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.825rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .margin-top { margin-top: 0.5rem; }
+
+    /* Task Row */
+    .task-table-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.55rem 1rem;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: var(--transition-fast);
+      font-size: 0.8rem;
+    }
+    .task-table-row:hover {
+      background: var(--bg-surface-hover);
+    }
+    .task-table-row.selected {
+      background: var(--bg-surface-subtle);
+      border-left: 3px solid var(--accent-cyan);
+    }
+
+    .cell-check {
+      display: flex;
+      align-items: center;
+      width: 24px;
+    }
+    .cell-type {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      width: 75px;
+      font-size: 0.75rem;
+    }
+    .type-name {
+      text-transform: capitalize;
+      color: var(--text-muted);
+    }
+    .cell-key {
+      font-size: 0.725rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      width: 85px;
+    }
+    .cell-summary {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+    .summary-text {
+      color: var(--text-main);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .summary-text.completed {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .cell-project {
+      width: 120px;
+    }
+    .project-pill {
+      font-size: 0.7rem;
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      padding: 0.1rem 0.45rem;
+      border-radius: var(--radius-xs);
+      color: var(--text-muted);
+      display: inline-block;
+      max-width: 110px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cell-priority {
+      width: 85px;
+    }
+    .priority-badge {
+      font-size: 0.675rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: var(--radius-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      border: 1px solid var(--border-subtle);
+    }
+    .priority-badge.urgent { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+    .priority-badge.high { background: #fef3c7; color: #d97706; border-color: #fcd34d; }
+    .priority-badge.medium { background: #e0f2fe; color: #0284c7; border-color: #7dd3fc; }
+    .priority-badge.low { background: #f3f4f6; color: #4b5563; border-color: #d1d5db; }
+
+    .cell-status {
+      width: 110px;
+    }
+    .status-select {
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      padding: 0.15rem 0.4rem;
+      font-size: 0.725rem;
+      color: var(--text-main);
+      outline: none;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .cell-due {
+      width: 105px;
+      font-size: 0.725rem;
+    }
+    .due-pill {
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .due-pill.overdue {
+      color: var(--accent-rose);
+      font-weight: 700;
+    }
+    .no-due { color: var(--text-subtle); }
+
+    .cell-actions {
+      width: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    .action-btn {
+      background: transparent;
+      border: none;
+      padding: 0.2rem 0.4rem;
+      cursor: pointer;
+      font-size: 0.8rem;
+      border-radius: var(--radius-xs);
+      opacity: 0.7;
+    }
+    .action-btn:hover {
+      opacity: 1;
+      background: var(--bg-surface-subtle);
+    }
+  `]
+})
+export class BacklogComponent implements OnInit {
+  searchQuery = signal<string>('');
+  selectedProject = signal<string>('ALL');
+  selectedType = signal<string>('ALL');
+  selectedPriority = signal<string>('ALL');
+  selectedStatus = signal<string>('ALL');
+  sortBy = signal<string>('priority');
+
+  showCreateModal = signal<boolean>(false);
+  activeDetailTask = signal<Task | null>(null);
+
+  selectedTaskIds = signal<string[]>([]);
+
+  constructor(
+    public taskService: TaskService,
+    public projectService: ProjectService,
+    public workspaceService: WorkspaceService
+  ) {}
+
+  ngOnInit() {
+    this.taskService.loadTasksFromSupabase();
+  }
+
+  allTasks = computed(() => this.taskService.tasks());
+
+  hasActiveFilters = computed(() => {
+    return (
+      this.searchQuery().trim() !== '' ||
+      this.selectedProject() !== 'ALL' ||
+      this.selectedType() !== 'ALL' ||
+      this.selectedPriority() !== 'ALL' ||
+      this.selectedStatus() !== 'ALL'
+    );
+  });
+
+  filteredTasks = computed(() => {
+    let list = [...this.allTasks()];
+    const q = this.searchQuery().toLowerCase().trim();
+    const proj = this.selectedProject();
+    const type = this.selectedType().toLowerCase();
+    const pri = this.selectedPriority().toLowerCase();
+    const st = this.selectedStatus().toLowerCase();
+    const sort = this.sortBy();
+
+    if (q) {
+      list = list.filter(t =>
+        t.title.toLowerCase().includes(q) ||
+        (t.description && t.description.toLowerCase().includes(q)) ||
+        t.id.toLowerCase().includes(q)
+      );
+    }
+
+    if (proj !== 'ALL') {
+      list = list.filter(t => t.project_id === proj);
+    }
+
+    if (type !== 'all') {
+      list = list.filter(t => (t.type || 'task').toLowerCase() === type);
+    }
+
+    if (pri !== 'all') {
+      list = list.filter(t => (t.priority || 'medium').toLowerCase() === pri);
+    }
+
+    if (st !== 'all') {
+      list = list.filter(t => this.normalizeStatus(t.status) === st);
+    }
+
+    // Sort logic
+    const priorityWeight: Record<string, number> = { urgent: 4, high: 3, medium: 2, low: 1 };
+    list.sort((a, b) => {
+      if (sort === 'priority') {
+        const pa = priorityWeight[(a.priority || 'medium').toLowerCase()] || 0;
+        const pb = priorityWeight[(b.priority || 'medium').toLowerCase()] || 0;
+        return pb - pa;
+      } else if (sort === 'due_date') {
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return a.due_date.localeCompare(b.due_date);
+      } else if (sort === 'title') {
+        return a.title.localeCompare(b.title);
+      } else if (sort === 'created_at') {
+        return (b.created_at || '').localeCompare(a.created_at || '');
+      }
+      return 0;
+    });
+
+    return list;
+  });
+
+  resetFilters() {
+    this.searchQuery.set('');
+    this.selectedProject.set('ALL');
+    this.selectedType.set('ALL');
+    this.selectedPriority.set('ALL');
+    this.selectedStatus.set('ALL');
+    this.sortBy.set('priority');
+  }
+
+  isAllSelected(): boolean {
+    const list = this.filteredTasks();
+    if (list.length === 0) return false;
+    return list.every(t => this.selectedTaskIds().includes(t.id));
+  }
+
+  toggleSelectAll() {
+    if (this.isAllSelected()) {
+      this.selectedTaskIds.set([]);
+    } else {
+      this.selectedTaskIds.set(this.filteredTasks().map(t => t.id));
+    }
+  }
+
+  isTaskSelected(id: string): boolean {
+    return this.selectedTaskIds().includes(id);
+  }
+
+  toggleSelectTask(id: string) {
+    this.selectedTaskIds.update(ids => {
+      if (ids.includes(id)) {
+        return ids.filter(i => i !== id);
+      } else {
+        return [...ids, id];
+      }
+    });
+  }
+
+  clearSelection() {
+    this.selectedTaskIds.set([]);
+  }
+
+  async batchUpdateStatus(status: 'todo' | 'in_progress' | 'review' | 'done') {
+    const ids = this.selectedTaskIds();
+    for (const id of ids) {
+      await this.taskService.updateTask(id, { status, completed: status === 'done' });
+    }
+    this.clearSelection();
+  }
+
+  async batchUpdatePriority(priority: 'urgent' | 'high' | 'medium' | 'low') {
+    const ids = this.selectedTaskIds();
+    for (const id of ids) {
+      await this.taskService.updateTask(id, { priority });
+    }
+    this.clearSelection();
+  }
+
+  async batchDelete() {
+    const ids = this.selectedTaskIds();
+    for (const id of ids) {
+      await this.taskService.deleteTask(id);
+    }
+    this.clearSelection();
+  }
+
+  async updateStatus(id: string, statusVal: string) {
+    await this.taskService.updateTask(id, { status: statusVal, completed: statusVal === 'done' });
+  }
+
+  async deleteTask(id: string) {
+    await this.taskService.deleteTask(id);
+  }
+
+  openDetail(t: Task) {
+    this.activeDetailTask.set(t);
+  }
+
+  getProjectName(id: string): string {
+    if (!id) return 'General';
+    const p = this.projectService.projects().find(item => item.id === id);
+    return p ? p.name : 'General';
+  }
+
+  getTypeIcon(type: string): string {
+    const t = (type || '').toLowerCase();
+    switch (t) {
+      case 'story': return 'fi fi-rr-book-alt';
+      case 'bug': return 'fi fi-rr-bug';
+      case 'epic': return 'fi fi-rr-rocket-takeoff';
+      default: return 'fi fi-rr-check-circle';
+    }
+  }
+
+  getTypeColor(type: string): string {
+    const t = (type || '').toLowerCase();
+    switch (t) {
+      case 'story': return '#0284c7';
+      case 'bug': return '#dc2626';
+      case 'epic': return '#7c3aed';
+      default: return '#16a34a';
+    }
+  }
+
+  normalizeStatus(status: string): string {
+    if (!status) return 'todo';
+    const s = status.toLowerCase().replace(/ /g, '_');
+    if (s.includes('done') || s.includes('complete')) return 'done';
+    if (s.includes('prog') || s.includes('dev')) return 'in_progress';
+    if (s.includes('rev')) return 'review';
+    return 'todo';
+  }
+
+  isDone(status: string): boolean {
+    return this.normalizeStatus(status) === 'done';
+  }
+
+  isOverdue(t: Task): boolean {
+    if (!t.due_date || t.completed || this.isDone(t.status)) return false;
+    const today = new Date().toISOString().split('T')[0];
+    return t.due_date < today;
+  }
+}

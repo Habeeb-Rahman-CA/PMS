@@ -30,8 +30,12 @@ import { WorkspaceService } from '../../core/services/workspace.service';
               <span class="key-badge">3</span>
             </div>
             <div class="shortcut-row">
-              <span class="row-label">04 ARCHIVE & Exports</span>
+              <span class="row-label">04 BACKLOG Jira Filter View</span>
               <span class="key-badge">4</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="row-label">05 ARCHIVE & Exports</span>
+              <span class="key-badge">5</span>
             </div>
           </div>
 
@@ -55,7 +59,7 @@ import { WorkspaceService } from '../../core/services/workspace.service';
         </div>
 
         <div class="modal-footer font-mono">
-          <span>Press any key number 1-4 to immediately change active workspace</span>
+          <span>Press any key number 1-5 to immediately change active workspace</span>
         </div>
       </div>
     </div>
