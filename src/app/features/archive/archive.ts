@@ -11,15 +11,15 @@ import { Task } from '../../core/models/project.model';
   template: `
     <div class="archive-workspace">
       <!-- Header -->
-      <div class="archive-header paper-panel">
-        <div class="header-left">
+      <div class="view-header-strip paper-panel">
+        <div class="view-header-left">
           <span class="badge-mono">06 ARCHIVE</span>
-          <h2>Completed Work & Historical Audit</h2>
+          <h2 class="view-header-title">Completed Work & Audit</h2>
         </div>
 
-        <div class="header-right font-mono">
+        <div class="view-header-right font-mono">
           <button class="btn btn-secondary btn-sm" (click)="exportData()">
-            <i class="fi fi-rr-download"></i> Export JSON Backup
+            <i class="fi fi-rr-download"></i> Export JSON
           </button>
         </div>
       </div>

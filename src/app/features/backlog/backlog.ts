@@ -15,16 +15,16 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
   template: `
     <div class="backlog-workspace font-mono">
       <!-- Top Banner Bar -->
-      <div class="backlog-banner paper-panel">
-        <div class="banner-left">
-          <span class="badge-mono">04 BACKLOG</span>
-          <h2>Task Backlog</h2>
-          <span class="banner-count font-mono">{{ filteredTasks().length }} of {{ allTasks().length }} Tasks</span>
+      <div class="view-header-strip paper-panel">
+        <div class="view-header-left">
+          <span class="badge-mono">03 BACKLOG</span>
+          <h2 class="view-header-title">Task Backlog</h2>
+          <span class="badge-mono text-muted">{{ filteredTasks().length }} of {{ allTasks().length }} Tasks</span>
         </div>
 
-        <div class="banner-right">
+        <div class="view-header-right">
           <button class="btn btn-primary btn-sm" (click)="showCreateModal.set(true)">
-            <i class="fi fi-rr-plus"></i> Create Task <span class="key-badge">N</span>
+            <i class="fi fi-rr-plus"></i> New Task <span class="key-badge">N</span>
           </button>
         </div>
       </div>

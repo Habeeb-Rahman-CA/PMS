@@ -15,14 +15,14 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
   template: `
     <div class="today-workspace">
       <!-- Top Header Strip -->
-      <div class="today-banner paper-panel">
-        <div class="banner-left">
+      <div class="view-header-strip paper-panel">
+        <div class="view-header-left">
           <span class="badge-mono">01 TODAY</span>
-          <span class="banner-date font-mono">{{ todayDateFormatted() }}</span>
+          <h2 class="view-header-title font-mono">{{ todayDateFormatted() }}</h2>
         </div>
 
-        <div class="banner-right">
-          <button class="btn btn-primary btn-sm" (click)="showNewTaskModal.set(true)">
+        <div class="view-header-right">
+          <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
             <i class="fi fi-rr-plus"></i> New Task <span class="key-badge">N</span>
           </button>
         </div>
@@ -564,6 +564,10 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
 export class TodayComponent {
   showNewTaskModal = signal<boolean>(false);
   activeDetailTask = signal<Task | null>(null);
+
+  openCreateModal() {
+    this.showNewTaskModal.set(true);
+  }
 
   constructor(
     public taskService: TaskService,

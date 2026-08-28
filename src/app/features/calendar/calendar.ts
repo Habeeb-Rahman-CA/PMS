@@ -25,10 +25,10 @@ export interface CalendarDayCell {
   template: `
     <div class="calendar-workspace font-mono">
       <!-- Calendar Header Strip -->
-      <div class="calendar-banner paper-panel">
-        <div class="banner-left">
+      <div class="view-header-strip paper-panel">
+        <div class="view-header-left">
           <span class="badge-mono">05 CALENDAR</span>
-          <h2>{{ monthTitle() }}</h2>
+          <h2 class="view-header-title">{{ monthTitle() }}</h2>
           <div class="nav-btn-group">
             <button class="btn btn-secondary btn-xs" (click)="prevMonth()" title="Previous Month">
               <i class="fi fi-rr-angle-left"></i>
@@ -42,7 +42,7 @@ export interface CalendarDayCell {
           </div>
         </div>
 
-        <div class="banner-right">
+        <div class="view-header-right">
           <!-- Event Type Filter Toggles -->
           <div class="filter-pills font-mono">
             <button
@@ -80,7 +80,7 @@ export interface CalendarDayCell {
           </button>
 
           <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
-            <i class="fi fi-rr-plus"></i> Create Task <span class="key-badge">N</span>
+            <i class="fi fi-rr-plus"></i> New Task <span class="key-badge">N</span>
           </button>
         </div>
       </div>

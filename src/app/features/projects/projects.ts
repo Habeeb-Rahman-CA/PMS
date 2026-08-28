@@ -21,14 +21,14 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
   template: `
     <div class="projects-workspace font-mono">
       <!-- 1. Header Bar -->
-      <div class="projects-banner paper-panel">
-        <div class="banner-left">
+      <div class="view-header-strip paper-panel">
+        <div class="view-header-left">
           <span class="badge-mono">02 PROJECTS</span>
-          <h2>Projects Workspace</h2>
+          <h2 class="view-header-title">Projects Workspace</h2>
           <span class="badge-mono text-muted">Total: {{ filteredProjects().length }}</span>
         </div>
 
-        <div class="banner-right">
+        <div class="view-header-right">
           <div class="search-box">
             <i class="fi fi-rr-search search-icon"></i>
             <input

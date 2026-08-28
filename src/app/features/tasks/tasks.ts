@@ -22,128 +22,126 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
   ],
   template: `
     <div class="tasks-page-container">
-      <!-- Header Banner -->
-      <div class="tasks-header paper-panel">
-        <div class="header-main">
-          <div class="header-left">
-            <span class="badge-mono">03 TASKS</span>
-            <h2>Kanban Workflow & Task Tracker</h2>
-          </div>
-
-          <div class="header-actions">
-            <button
-              class="btn btn-primary btn-sm"
-              [disabled]="activeColumns().length === 0"
-              (click)="openCreateModal()"
-            >
-              <i class="fi fi-rr-plus"></i> New Task <span class="key-badge">N</span>
-            </button>
-          </div>
+      <!-- 1. Standalone Top Header Bar -->
+      <div class="view-header-strip paper-panel">
+        <div class="view-header-left">
+          <span class="badge-mono">04 BOARD</span>
+          <h2 class="view-header-title">Kanban Board</h2>
         </div>
 
-        <!-- Filter Toolbar -->
-        <div class="filter-bar font-mono">
-          <div class="filters-left">
-            <!-- Project Filter -->
-            <div class="filter-group">
-              <label class="filter-label">Project</label>
-              <select
-                class="form-select filter-select"
-                [ngModel]="selectedProjectId()"
-                (ngModelChange)="onProjectChange($event)"
-              >
-                <option value="all">All Projects</option>
-                @for (p of projectService.projects(); track p.id) {
-                  <option [value]="p.id">{{ p.name }}</option>
-                }
-              </select>
-            </div>
+        <div class="view-header-right">
+          <button
+            class="btn btn-primary btn-sm"
+            [disabled]="activeColumns().length === 0"
+            (click)="openCreateModal()"
+          >
+            <i class="fi fi-rr-plus"></i> New Task <span class="key-badge">N</span>
+          </button>
+        </div>
+      </div>
 
-            <!-- Issue Type Filter -->
-            <div class="filter-group">
-              <label class="filter-label">Issue Type</label>
-              <select
-                class="form-select filter-select"
-                [ngModel]="selectedType()"
-                (ngModelChange)="selectedType.set($event)"
-              >
-                <option value="all">All Types</option>
-                <option value="story">Story</option>
-                <option value="bug">Bug</option>
-                <option value="task">Task</option>
-                <option value="epic">Epic</option>
-              </select>
-            </div>
-
-            <!-- Priority Filter -->
-            <div class="filter-group">
-              <label class="filter-label">Priority</label>
-              <select
-                class="form-select filter-select"
-                [ngModel]="selectedPriority()"
-                (ngModelChange)="selectedPriority.set($event)"
-              >
-                <option value="all">All Priorities</option>
-                <option value="urgent">Urgent</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
-            </div>
-
-            <!-- Label Filter -->
-            <div class="filter-group">
-              <label class="filter-label">Label</label>
-              <select
-                class="form-select filter-select"
-                [ngModel]="selectedLabel()"
-                (ngModelChange)="selectedLabel.set($event)"
-              >
-                <option value="all">All Labels</option>
-                @for (lbl of availableLabels(); track lbl) {
-                  <option [value]="lbl">#{{ lbl }}</option>
-                }
-              </select>
-            </div>
-
-            <!-- Due Date Filter -->
-            <div class="filter-group">
-              <label class="filter-label">Due Date</label>
-              <select
-                class="form-select filter-select"
-                [ngModel]="selectedDueDateFilter()"
-                (ngModelChange)="selectedDueDateFilter.set($event)"
-              >
-                <option value="all">All Dates</option>
-                <option value="overdue">Overdue</option>
-                <option value="today">Due Today</option>
-                <option value="week">Due This Week</option>
-                <option value="has_date">Has Due Date</option>
-                <option value="no_date">No Due Date</option>
-              </select>
-            </div>
-
-            @if (hasActiveFilters()) {
-              <div class="filter-group reset-group">
-                <label class="filter-label">&nbsp;</label>
-                <button class="btn btn-ghost btn-xs reset-btn" (click)="resetFilters()">
-                  <i class="fi fi-rr-refresh"></i> Clear Filters
-                </button>
-              </div>
-            }
+      <!-- 2. Standalone Filter Toolbar -->
+      <div class="filter-bar paper-panel font-mono">
+        <div class="filters-left">
+          <!-- Project Filter -->
+          <div class="filter-group">
+            <label class="filter-label">PROJECT</label>
+            <select
+              class="form-select filter-select"
+              [ngModel]="selectedProjectId()"
+              (ngModelChange)="onProjectChange($event)"
+            >
+              <option value="all">All Projects</option>
+              @for (p of projectService.projects(); track p.id) {
+                <option [value]="p.id">{{ p.name }}</option>
+              }
+            </select>
           </div>
 
-          <!-- Search Box -->
-          <div class="search-box">
-            <i class="fi fi-rr-search search-icon"></i>
-            <input
-              type="text"
-              class="form-input search-input"
-              placeholder="Search title, description..."
-              [ngModel]="searchQuery()"
-              (ngModelChange)="searchQuery.set($event)"
-            />
+          <!-- Issue Type Filter -->
+          <div class="filter-group">
+            <label class="filter-label">TYPE</label>
+            <select
+              class="form-select filter-select"
+              [ngModel]="selectedType()"
+              (ngModelChange)="selectedType.set($event)"
+            >
+              <option value="all">All Types</option>
+              <option value="story">Story</option>
+              <option value="bug">Bug</option>
+              <option value="task">Task</option>
+              <option value="epic">Epic</option>
+            </select>
           </div>
+
+          <!-- Priority Filter -->
+          <div class="filter-group">
+            <label class="filter-label">PRIORITY</label>
+            <select
+              class="form-select filter-select"
+              [ngModel]="selectedPriority()"
+              (ngModelChange)="selectedPriority.set($event)"
+            >
+              <option value="all">All Priorities</option>
+              <option value="urgent">Urgent</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+
+          <!-- Label Filter -->
+          <div class="filter-group">
+            <label class="filter-label">LABEL</label>
+            <select
+              class="form-select filter-select"
+              [ngModel]="selectedLabel()"
+              (ngModelChange)="selectedLabel.set($event)"
+            >
+              <option value="all">All Labels</option>
+              @for (lbl of availableLabels(); track lbl) {
+                <option [value]="lbl">#{{ lbl }}</option>
+              }
+            </select>
+          </div>
+
+          <!-- Due Date Filter -->
+          <div class="filter-group">
+            <label class="filter-label">DUE DATE</label>
+            <select
+              class="form-select filter-select"
+              [ngModel]="selectedDueDateFilter()"
+              (ngModelChange)="selectedDueDateFilter.set($event)"
+            >
+              <option value="all">All Dates</option>
+              <option value="overdue">Overdue</option>
+              <option value="today">Due Today</option>
+              <option value="week">Due This Week</option>
+              <option value="has_date">Has Due Date</option>
+              <option value="no_date">No Due Date</option>
+            </select>
+          </div>
+
+          @if (hasActiveFilters()) {
+            <div class="filter-group reset-group">
+              <label class="filter-label">&nbsp;</label>
+              <button class="btn btn-ghost btn-xs reset-btn" (click)="resetFilters()">
+                <i class="fi fi-rr-refresh"></i> Clear Filters
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- Search Box -->
+        <div class="search-box">
+          <i class="fi fi-rr-search search-icon"></i>
+          <input
+            type="text"
+            class="form-input search-input"
+            placeholder="Search title, description..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="searchQuery.set($event)"
+          />
         </div>
       </div>
 
@@ -271,39 +269,14 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       padding: 1rem;
       width: 100%;
     }
-    .tasks-header {
-      padding: 0.85rem 1.1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.85rem;
-      background: var(--bg-surface);
-    }
-    .header-main {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .header-left h2 {
-      font-size: 1.15rem;
-    }
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
     .filter-bar {
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      padding-top: 0.75rem;
-      border-top: 1px solid var(--border-subtle);
+      padding: 0.75rem 1rem;
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
       flex-wrap: wrap;
       gap: 0.75rem;
     }
