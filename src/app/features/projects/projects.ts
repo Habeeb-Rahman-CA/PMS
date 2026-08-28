@@ -1,10 +1,10 @@
 import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { ProjectService } from '../../core/services/project.service';
 import { TaskService } from '../../core/services/task.service';
 import { WorkflowService } from '../../core/services/workflow.service';
+import { WorkspaceService } from '../../core/services/workspace.service';
 import { Project, Task } from '../../core/models/project.model';
 import { ProjectModalComponent } from '../../shared/components/project-modal';
 import { TaskModalComponent } from '../../shared/components/task-modal';
@@ -16,7 +16,6 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
   imports: [
     CommonModule,
     FormsModule,
-    RouterLink,
     ProjectModalComponent,
     TaskModalComponent,
     TaskDetailModalComponent
@@ -24,12 +23,13 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
   template: `
     <div class="compact-dashboard-container">
       <!-- 1. Header Bar: Selector & Actions -->
-      <div class="dash-header glass-panel">
+      <div class="dash-header paper-panel">
         <div class="header-left">
-          <h2>Dashboard</h2>
-          
+          <span class="badge-mono">02 PROJECTS</span>
+          <h2>Projects Workspace</h2>
+
           <select
-            class="form-select project-select"
+            class="form-select project-select font-mono"
             [ngModel]="selectedProjectId()"
             (ngModelChange)="onProjectSelect($event)"
           >
@@ -40,7 +40,7 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
           </select>
 
           @if (activeProjectObj()?.repository_url; as repoUrl) {
-            <a [href]="repoUrl" target="_blank" class="repo-badge btn btn-ghost btn-sm">
+            <a [href]="repoUrl" target="_blank" class="repo-badge btn btn-ghost btn-xs font-mono">
               <i class="fi fi-brands-github"></i> Repository
             </a>
           }
@@ -59,10 +59,10 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       <!-- 2. At-a-Glance 4 Stat Cards Row -->
       <div class="stats-row">
         <!-- Card 1: Overall Progress -->
-        <div class="stat-card glass-panel">
-          <div class="stat-header">
+        <div class="stat-card paper-panel">
+          <div class="stat-header font-mono">
             <span class="stat-lbl">Overall Progress</span>
-            <span class="health-chip" [class.complete]="dashboardProgress().percent === 100">
+            <span class="badge-mono text-emerald" [class.complete]="dashboardProgress().percent === 100">
               {{ dashboardProgress().percent }}%
             </span>
           </div>
@@ -79,15 +79,17 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
         </div>
 
         <!-- Card 2: Status Breakdown -->
-        <div class="stat-card glass-panel">
-          <div class="stat-header">
+        <div class="stat-card paper-panel">
+          <div class="stat-header font-mono">
             <span class="stat-lbl">Status Breakdown</span>
-            <a routerLink="/tasks" class="mini-link">Board <i class="fi fi-rr-angle-small-right"></i></a>
+            <button class="btn btn-ghost btn-xs font-mono" (click)="workspaceService.setWorkspace('03 TASKS')">
+              Board <i class="fi fi-rr-angle-small-right"></i>
+            </button>
           </div>
-          <div class="status-pills-row">
+          <div class="status-pills-row font-mono">
             @for (st of statusBreakdown(); track st.id) {
               <div class="mini-status-pill" [title]="st.name + ': ' + st.count">
-                <span class="dot" [style.background-color]="st.color"></span>
+                <span class="status-dot" [style.background-color]="st.color"></span>
                 <span class="st-name">{{ st.name }}</span>
                 <span class="st-cnt">{{ st.count }}</span>
               </div>
@@ -96,10 +98,10 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
         </div>
 
         <!-- Card 3: Open Bugs & High Priority -->
-        <div class="stat-card glass-panel" [class.has-issues]="openBugsAndHighPriority().length > 0">
-          <div class="stat-header">
+        <div class="stat-card paper-panel" [class.has-issues]="openBugsAndHighPriority().length > 0">
+          <div class="stat-header font-mono">
             <span class="stat-lbl">Bugs & High Priority</span>
-            <span class="badge-num rose">{{ openBugsAndHighPriority().length }}</span>
+            <span class="badge-mono badge-urgent">{{ openBugsAndHighPriority().length }}</span>
           </div>
           <div class="stat-big-val font-mono">
             {{ openBugsAndHighPriority().length }} <span class="val-sub">Need Attention</span>
@@ -107,10 +109,10 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
         </div>
 
         <!-- Card 4: Overdue & Upcoming -->
-        <div class="stat-card glass-panel" [class.has-overdue]="overdueCount() > 0">
-          <div class="stat-header">
+        <div class="stat-card paper-panel" [class.has-overdue]="overdueCount() > 0">
+          <div class="stat-header font-mono">
             <span class="stat-lbl">Due Soon / Overdue</span>
-            <span class="badge-num amber">{{ upcomingOrOverdueTasks().length }}</span>
+            <span class="badge-mono badge-high">{{ upcomingOrOverdueTasks().length }}</span>
           </div>
           <div class="stat-big-val font-mono">
             <span [class.text-rose]="overdueCount() > 0">{{ overdueCount() }} Overdue</span>
@@ -124,27 +126,27 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
         <!-- LEFT COLUMN: Open Bugs & Urgent Tasks + Upcoming Schedule -->
         <div class="grid-col">
           <!-- Open Bugs & High Priority Section -->
-          <div class="section-box glass-panel">
+          <div class="section-box paper-panel">
             <div class="box-header">
               <h3><i class="fi fi-rr-bug text-rose"></i> Open Bugs & High Priority</h3>
-              <span class="box-cnt">{{ openBugsAndHighPriority().length }}</span>
+              <span class="badge-mono font-mono">{{ openBugsAndHighPriority().length }}</span>
             </div>
-            
+
             <div class="box-body">
               @if (openBugsAndHighPriority().length === 0) {
-                <div class="compact-empty">
+                <div class="compact-empty font-mono">
                   <i class="fi fi-rr-check-circle text-emerald"></i>
                   <span>No open bugs or urgent priority items</span>
                 </div>
               } @else {
-                <div class="compact-task-list">
+                <div class="compact-task-list font-mono">
                   @for (t of openBugsAndHighPriority(); track t.id) {
                     <div class="compact-task-row" (click)="openDetailModal(t)">
                       <div class="row-left">
-                        <span class="badge" [class]="'badge-' + t.type">
+                        <span class="badge-type" [class]="t.type">
                           <i [class]="getTypeIcon(t.type)"></i> {{ t.type }}
                         </span>
-                        <span class="badge" [class]="'badge-' + t.priority">
+                        <span class="badge-mono" [class.badge-urgent]="t.priority === 'urgent'" [class.badge-high]="t.priority === 'high'">
                           {{ t.priority }}
                         </span>
                         <span class="task-title-text">{{ t.title }}</span>
@@ -160,24 +162,24 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
           </div>
 
           <!-- Upcoming & Overdue Schedule Section -->
-          <div class="section-box glass-panel">
+          <div class="section-box paper-panel">
             <div class="box-header">
               <h3><i class="fi fi-rr-calendar text-amber"></i> Upcoming & Overdue Tasks</h3>
-              <span class="box-cnt">{{ upcomingOrOverdueTasks().length }}</span>
+              <span class="badge-mono font-mono">{{ upcomingOrOverdueTasks().length }}</span>
             </div>
 
             <div class="box-body">
               @if (upcomingOrOverdueTasks().length === 0) {
-                <div class="compact-empty">
+                <div class="compact-empty font-mono">
                   <i class="fi fi-rr-calendar-check text-cyan"></i>
                   <span>No upcoming or overdue tasks scheduled</span>
                 </div>
               } @else {
-                <div class="compact-task-list">
+                <div class="compact-task-list font-mono">
                   @for (t of upcomingOrOverdueTasks(); track t.id) {
                     <div class="compact-task-row" (click)="openDetailModal(t)">
                       <div class="row-left">
-                        <span class="date-chip" [class.overdue-chip]="t.isOverdue">
+                        <span class="badge-mono" [class.badge-urgent]="t.isOverdue">
                           <i class="fi fi-rr-clock"></i> {{ t.isOverdue ? 'Overdue' : 'Due' }}: {{ t.due_date }}
                         </span>
                         <span class="task-title-text">{{ t.title }}</span>
@@ -196,10 +198,10 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
         <!-- RIGHT COLUMN: Projects List & Activity Stream -->
         <div class="grid-col">
           <!-- Projects Summary List -->
-          <div class="section-box glass-panel">
+          <div class="section-box paper-panel">
             <div class="box-header">
               <h3><i class="fi fi-rr-folder text-cyan"></i> Projects Overview</h3>
-              <button class="btn btn-ghost btn-xs" (click)="openCreateProjectModal()">
+              <button class="btn btn-ghost btn-xs font-mono" (click)="openCreateProjectModal()">
                 <i class="fi fi-rr-plus"></i> Add
               </button>
             </div>
@@ -208,19 +210,19 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
               <div class="compact-proj-list">
                 @for (p of projectService.projects(); track p.id) {
                   <div
-                    class="compact-proj-card"
+                    class="compact-proj-card paper-panel"
                     [class.active-proj]="selectedProjectId() === p.id"
                     (click)="onProjectSelect(p.id)"
                   >
                     <div class="proj-top">
                       <div class="proj-name-group">
-                        <span class="color-dot" [style.background-color]="p.color"></span>
+                        <span class="status-dot" [style.background-color]="p.color"></span>
                         <span class="proj-name">{{ p.name }}</span>
                       </div>
-                      <span class="badge-status" [class]="p.status">{{ p.status }}</span>
+                      <span class="badge-mono" [class.badge-medium]="p.status === 'active'">{{ p.status }}</span>
                     </div>
 
-                    <div class="proj-mid">
+                    <div class="proj-mid font-mono">
                       <div class="mini-bar-track">
                         <div
                           class="mini-bar-fill"
@@ -231,7 +233,7 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
                       <span class="proj-pct">{{ projectService.getProjectProgress(p.id).percent }}%</span>
                     </div>
 
-                    <div class="proj-bottom">
+                    <div class="proj-bottom font-mono">
                       @if (p.repository_url) {
                         <a [href]="p.repository_url" target="_blank" class="repo-icon-link" (click)="$event.stopPropagation()">
                           <i class="fi fi-brands-github"></i> Repo
@@ -248,22 +250,22 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
           </div>
 
           <!-- Activity Log Section -->
-          <div class="section-box glass-panel">
+          <div class="section-box paper-panel">
             <div class="box-header">
               <h3><i class="fi fi-rr-clock-three text-cyan"></i> Recent Activity</h3>
             </div>
 
             <div class="box-body">
               @if (projectActivities().length === 0) {
-                <div class="compact-empty">
+                <div class="compact-empty font-mono">
                   <i class="fi fi-rr-time-past text-subtle"></i>
                   <span>No recent activity</span>
                 </div>
               } @else {
-                <div class="compact-timeline">
+                <div class="compact-timeline font-mono">
                   @for (act of projectActivities(); track act.id) {
                     <div class="timeline-row">
-                      <span class="timeline-dot"></span>
+                      <span class="status-dot dot-cyan"></span>
                       <div class="timeline-info">
                         <span class="act-title">{{ act.action }}: {{ act.description }}</span>
                         <span class="act-time">{{ formatDate(act.timestamp) }}</span>
@@ -305,46 +307,32 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       display: flex;
       flex-direction: column;
       gap: 1rem;
-      padding: 1.25rem;
+      padding: 1rem;
       width: 100%;
-      margin: 0 auto;
     }
 
-    /* 1. Header Bar */
     .dash-header {
-      padding: 0.85rem 1.25rem;
+      padding: 0.85rem 1.1rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
       gap: 0.85rem;
+      background: var(--bg-surface);
     }
     .header-left {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.75rem;
       flex-wrap: wrap;
     }
     .header-left h2 {
-      font-size: 1.25rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      font-size: 1.15rem;
     }
-    .text-cyan { color: var(--accent-cyan); }
-    .text-rose { color: var(--accent-rose); }
-    .text-amber { color: var(--accent-amber); }
-    .text-emerald { color: var(--accent-emerald); }
     .project-select {
-      width: 200px;
-      padding: 0.35rem 0.65rem;
-      font-size: 0.825rem;
-    }
-    .repo-badge {
-      font-size: 0.8rem;
-      display: flex;
-      align-items: center;
-      gap: 0.35rem;
+      width: 180px;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.775rem;
     }
     .header-right {
       display: flex;
@@ -352,18 +340,16 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       gap: 0.5rem;
     }
 
-    /* 2. Top Stats Row */
     .stats-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 1rem;
     }
     .stat-card {
-      padding: 0.85rem 1.1rem;
+      padding: 0.75rem 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
-      justify-content: center;
+      gap: 0.45rem;
     }
     .stat-header {
       display: flex;
@@ -371,29 +357,18 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       align-items: center;
     }
     .stat-lbl {
-      font-size: 0.75rem;
-      color: var(--text-subtle);
+      font-size: 0.7rem;
+      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.04em;
       font-weight: 600;
     }
-    .health-chip {
-      font-size: 0.725rem;
-      font-weight: 700;
-      padding: 0.1rem 0.45rem;
-      border-radius: var(--radius-full);
-      background: rgba(6, 182, 212, 0.15);
-      color: var(--accent-cyan);
-    }
-    .health-chip.complete {
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--accent-emerald);
-    }
     .mini-bar-track {
       width: 100%;
-      height: 6px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 3px;
+      height: 5px;
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
       overflow: hidden;
     }
     .mini-bar-fill {
@@ -401,15 +376,10 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       transition: width 0.3s ease;
     }
     .stat-sub {
-      font-size: 0.75rem;
+      font-size: 0.725rem;
       color: var(--text-muted);
     }
-    .font-mono { font-family: var(--font-mono); }
-    .mini-link {
-      font-size: 0.75rem;
-      color: var(--accent-cyan);
-      text-decoration: none;
-    }
+
     .status-pills-row {
       display: flex;
       gap: 0.35rem;
@@ -419,45 +389,30 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       display: flex;
       align-items: center;
       gap: 0.3rem;
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
       padding: 0.15rem 0.45rem;
-      border-radius: var(--radius-sm);
-      font-size: 0.725rem;
-    }
-    .mini-status-pill .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
+      border-radius: var(--radius-xs);
+      font-size: 0.7rem;
     }
     .st-name { color: var(--text-muted); }
     .st-cnt { font-weight: 700; color: var(--text-main); }
-    .badge-num {
-      font-size: 0.725rem;
-      font-weight: 700;
-      padding: 0.1rem 0.45rem;
-      border-radius: var(--radius-full);
-    }
-    .badge-num.rose { background: rgba(244, 63, 94, 0.15); color: var(--accent-rose); }
-    .badge-num.amber { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
     .stat-big-val {
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       font-weight: 700;
       color: var(--text-main);
     }
-    .val-sub { font-size: 0.775rem; color: var(--text-muted); font-weight: 400; }
+    .val-sub { font-size: 0.75rem; color: var(--text-muted); font-weight: 400; }
     .stat-card.has-issues { border-left: 3px solid var(--accent-rose); }
     .stat-card.has-overdue { border-left: 3px solid var(--accent-amber); }
 
-    /* 3. Main Dashboard Grid */
     .dashboard-grid {
       display: grid;
-      grid-template-columns: 1fr 380px;
+      grid-template-columns: 1fr 360px;
       gap: 1rem;
     }
     @media (max-width: 1024px) {
-      .dashboard-grid {
-        grid-template-columns: 1fr;
-      }
+      .dashboard-grid { grid-template-columns: 1fr; }
     }
     .grid-col {
       display: flex;
@@ -465,35 +420,23 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       gap: 1rem;
     }
     .section-box {
-      padding: 1rem 1.1rem;
+      padding: 0.85rem 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 0.65rem;
     }
     .box-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 0.5rem;
+      padding-bottom: 0.45rem;
       border-bottom: 1px solid var(--border-subtle);
     }
     .box-header h3 {
-      font-size: 0.95rem;
-      font-weight: 600;
+      font-size: 0.9rem;
       display: flex;
       align-items: center;
       gap: 0.45rem;
-    }
-    .box-cnt {
-      font-size: 0.725rem;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 0.1rem 0.45rem;
-      border-radius: var(--radius-full);
-      color: var(--text-muted);
-    }
-    .btn-xs {
-      padding: 0.2rem 0.5rem;
-      font-size: 0.75rem;
     }
     .compact-empty {
       padding: 1.5rem 1rem;
@@ -508,22 +451,22 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
     .compact-task-list {
       display: flex;
       flex-direction: column;
-      gap: 0.45rem;
+      gap: 0.35rem;
     }
     .compact-task-row {
-      padding: 0.55rem 0.75rem;
-      background: var(--bg-surface);
-      border-radius: var(--radius-md);
+      padding: 0.45rem 0.65rem;
+      background: var(--bg-surface-subtle);
+      border-radius: var(--radius-xs);
       display: flex;
       justify-content: space-between;
       align-items: center;
       cursor: pointer;
       border: 1px solid var(--border-subtle);
-      transition: var(--transition);
+      transition: var(--transition-fast);
     }
     .compact-task-row:hover {
-      border-color: var(--border-active);
-      transform: translateX(3px);
+      background: var(--bg-surface-hover);
+      border-color: var(--border-medium);
     }
     .row-left {
       display: flex;
@@ -533,57 +476,42 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       flex: 1;
     }
     .task-title-text {
-      font-size: 0.825rem;
+      font-size: 0.8rem;
       font-weight: 500;
       color: var(--text-main);
     }
     .status-tag {
       font-size: 0.7rem;
-      background: rgba(255, 255, 255, 0.08);
-      padding: 0.1rem 0.45rem;
-      border-radius: var(--radius-sm);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      padding: 0.1rem 0.4rem;
+      border-radius: var(--radius-xs);
       color: var(--text-muted);
-    }
-    .date-chip {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      background: rgba(255, 255, 255, 0.08);
-      padding: 0.15rem 0.45rem;
-      border-radius: var(--radius-sm);
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-    }
-    .date-chip.overdue-chip {
-      color: #ef4444;
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      font-weight: 600;
     }
 
-    /* Projects Overview List */
     .compact-proj-list {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.45rem;
     }
     .compact-proj-card {
-      padding: 0.65rem 0.85rem;
-      background: var(--bg-surface);
-      border-radius: var(--radius-md);
+      padding: 0.55rem 0.75rem;
+      background: var(--bg-surface-subtle);
+      border-radius: var(--radius-xs);
       border: 1px solid var(--border-subtle);
       display: flex;
       flex-direction: column;
-      gap: 0.4rem;
+      gap: 0.35rem;
       cursor: pointer;
-      transition: var(--transition);
+      transition: var(--transition-fast);
     }
     .compact-proj-card:hover {
-      border-color: var(--border-active);
+      background: var(--bg-surface-hover);
+      border-color: var(--border-medium);
     }
     .compact-proj-card.active-proj {
-      border-color: var(--accent-cyan);
-      box-shadow: 0 0 10px rgba(6, 182, 212, 0.15);
+      border-color: var(--text-main);
+      background: var(--bg-surface);
     }
     .proj-top {
       display: flex;
@@ -595,27 +523,9 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       align-items: center;
       gap: 0.4rem;
     }
-    .color-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-    }
     .proj-name {
-      font-size: 0.85rem;
+      font-size: 0.825rem;
       font-weight: 600;
-    }
-    .badge-status {
-      font-size: 0.675rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      padding: 0.1rem 0.4rem;
-      border-radius: var(--radius-full);
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--accent-emerald);
-    }
-    .badge-status.archived {
-      background: rgba(156, 163, 175, 0.15);
-      color: var(--text-muted);
     }
     .proj-mid {
       display: flex;
@@ -623,15 +533,14 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
       gap: 0.5rem;
     }
     .proj-pct {
-      font-size: 0.725rem;
-      font-family: var(--font-mono);
+      font-size: 0.7rem;
       color: var(--text-muted);
     }
     .proj-bottom {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.75rem;
+      font-size: 0.725rem;
     }
     .repo-icon-link {
       color: var(--accent-cyan);
@@ -648,42 +557,29 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
     .btn-xs-icon {
       background: transparent;
       border: none;
-      color: var(--text-subtle);
+      color: var(--text-muted);
       cursor: pointer;
       padding: 0.1rem 0.3rem;
-      border-radius: var(--radius-sm);
-    }
-    .btn-xs-icon:hover {
-      color: var(--text-main);
-      background: var(--bg-surface-hover);
+      border-radius: var(--radius-xs);
     }
 
-    /* Compact Timeline */
     .compact-timeline {
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
+      gap: 0.55rem;
     }
     .timeline-row {
       display: flex;
-      gap: 0.5rem;
+      gap: 0.45rem;
       align-items: flex-start;
-      font-size: 0.775rem;
-    }
-    .timeline-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--accent-cyan);
-      margin-top: 5px;
-      flex-shrink: 0;
+      font-size: 0.75rem;
     }
     .timeline-info {
       display: flex;
       flex-direction: column;
     }
     .act-title { color: var(--text-main); font-weight: 500; }
-    .act-time { color: var(--text-subtle); font-size: 0.7rem; }
+    .act-time { color: var(--text-muted); font-size: 0.675rem; }
   `]
 })
 export class ProjectsComponent {
@@ -697,7 +593,8 @@ export class ProjectsComponent {
   constructor(
     public projectService: ProjectService,
     public taskService: TaskService,
-    public workflowService: WorkflowService
+    public workflowService: WorkflowService,
+    public workspaceService: WorkspaceService
   ) {
     const activeP = this.projectService.activeProject();
     if (activeP) {
@@ -721,7 +618,6 @@ export class ProjectsComponent {
     }
   }
 
-  // 1. Overall Progress
   dashboardProgress = computed(() => {
     const proj = this.activeProjectObj();
     const tasks = this.taskService.tasks();
@@ -734,7 +630,6 @@ export class ProjectsComponent {
     return { total, completed, percent };
   });
 
-  // 2. Status Breakdown
   statusBreakdown = computed(() => {
     const proj = this.activeProjectObj();
     const projId = proj ? proj.id : 'all';
@@ -747,13 +642,12 @@ export class ProjectsComponent {
       return {
         id: wf.id,
         name: wf.name,
-        color: wf.color || '#06b6d4',
+        color: wf.color || '#0284c7',
         count
       };
     });
   });
 
-  // 3. Open Bugs & High Priority
   openBugsAndHighPriority = computed(() => {
     const proj = this.activeProjectObj();
     const tasks = this.taskService.tasks();
@@ -766,7 +660,6 @@ export class ProjectsComponent {
     );
   });
 
-  // 4. Upcoming & Overdue Tasks
   upcomingOrOverdueTasks = computed(() => {
     const proj = this.activeProjectObj();
     const tasks = this.taskService.tasks();
@@ -786,7 +679,6 @@ export class ProjectsComponent {
     return this.upcomingOrOverdueTasks().filter(t => t.isOverdue).length;
   });
 
-  // 5. Recent Activity
   projectActivities = computed(() => {
     const proj = this.activeProjectObj();
     if (!proj) return this.projectService.activities().slice(0, 5);
@@ -798,14 +690,13 @@ export class ProjectsComponent {
       case 'story': return 'fi fi-rr-book-alt';
       case 'bug': return 'fi fi-rr-bug';
       case 'epic': return 'fi fi-rr-rocket-takeoff';
-      default: return 'fi fi-rr-checkbox';
+      default: return 'fi fi-rr-check-circle';
     }
   }
 
-  formatDate(isoString: string): string {
-    if (!isoString) return '';
-    const date = new Date(isoString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  formatDate(dateStr: string): string {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   }
 
   openCreateProjectModal() {
@@ -813,8 +704,8 @@ export class ProjectsComponent {
     this.showProjectModal.set(true);
   }
 
-  openEditModal(project: Project) {
-    this.editingProject.set(project);
+  openEditModal(p: Project) {
+    this.editingProject.set(p);
     this.showProjectModal.set(true);
   }
 
@@ -831,8 +722,8 @@ export class ProjectsComponent {
     this.showTaskModal.set(false);
   }
 
-  openDetailModal(task: Task) {
-    this.activeDetailTask.set(task);
+  openDetailModal(t: Task) {
+    this.activeDetailTask.set(t);
   }
 
   closeDetailModal() {

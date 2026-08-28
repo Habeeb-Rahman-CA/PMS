@@ -5,6 +5,7 @@ import { DragDropModule, CdkDragDrop } from '@angular/cdk/drag-drop';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
 import { WorkflowService } from '../../core/services/workflow.service';
+import { WorkspaceService } from '../../core/services/workspace.service';
 import { Project, Task, Workflow } from '../../core/models/project.model';
 import { TaskModalComponent } from '../../shared/components/task-modal';
 import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
@@ -24,31 +25,32 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
   template: `
     <div class="tasks-page-container">
       <!-- Header Banner -->
-      <div class="tasks-header glass-panel">
+      <div class="tasks-header paper-panel">
         <div class="header-main">
-          <div>
-            <h2>Tasks</h2>
+          <div class="header-left">
+            <span class="badge-mono">03 TASKS</span>
+            <h2>Kanban Workflow & Task Tracker</h2>
           </div>
 
           <div class="header-actions">
             @if (selectedProjectId() !== 'all') {
-              <button class="btn btn-secondary" (click)="openWorkflowModal()">
+              <button class="btn btn-secondary btn-sm" (click)="openWorkflowModal()">
                 <i class="fi fi-rr-settings-sliders"></i> Workflow
               </button>
             }
 
             <button
-              class="btn btn-primary"
+              class="btn btn-primary btn-sm"
               [disabled]="activeColumns().length === 0"
               (click)="openCreateModal()"
             >
-              <i class="fi fi-rr-plus"></i> New Task
+              <i class="fi fi-rr-plus"></i> New Task <span class="key-badge">N</span>
             </button>
           </div>
         </div>
 
         <!-- Filter Toolbar -->
-        <div class="filter-bar">
+        <div class="filter-bar font-mono">
           <div class="filters-left">
             <!-- Project Filter -->
             <div class="filter-group">
@@ -132,7 +134,7 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
             @if (hasActiveFilters()) {
               <div class="filter-group reset-group">
                 <label class="filter-label">&nbsp;</label>
-                <button class="btn btn-ghost btn-sm reset-btn" (click)="resetFilters()">
+                <button class="btn btn-ghost btn-xs reset-btn" (click)="resetFilters()">
                   <i class="fi fi-rr-refresh"></i> Clear Filters
                 </button>
               </div>
@@ -155,27 +157,27 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
 
       <!-- Kanban Board -->
       @if (activeColumns().length === 0) {
-        <div class="empty-board glass-panel">
+        <div class="empty-board paper-panel font-mono">
           <i class="fi fi-rr-settings-sliders empty-board-icon"></i>
           <h3>No Status Workflow Configured</h3>
           <p>You haven't created any status columns for this project yet.</p>
-          <button class="btn btn-primary" (click)="openWorkflowModal()">
+          <button class="btn btn-primary btn-sm" (click)="openWorkflowModal()">
             <i class="fi fi-rr-plus"></i> Add Status Columns
           </button>
         </div>
       } @else {
         <div class="kanban-board" cdkDropListGroup>
           @for (col of activeColumns(); track col.id) {
-            <div class="kanban-column glass-panel">
+            <div class="kanban-column paper-panel">
               <!-- Column Header -->
               <div class="column-header">
                 <div class="column-title">
-                  <span class="col-dot" [style.background-color]="col.color || '#06b6d4'"></span>
+                  <span class="status-dot" [style.background-color]="col.color || '#0284c7'"></span>
                   <h3>{{ col.name }}</h3>
-                  <span class="col-count">{{ getColumnTasks(col.name).length }}</span>
+                  <span class="badge-mono font-mono">{{ getColumnTasks(col.name).length }}</span>
                 </div>
                 <button
-                  class="btn btn-ghost btn-sm btn-icon"
+                  class="btn btn-ghost btn-xs btn-icon"
                   (click)="openCreateModal(col.name)"
                   title="Add Task to {{ col.name }}"
                 >
@@ -190,58 +192,58 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
                 [cdkDropListData]="getColumnTasks(col.name)"
                 (cdkDropListDropped)="drop($event, col)"
               >
-                  @for (t of getColumnTasks(col.name); track t.id) {
-                    <div
-                      class="task-card glass-panel"
-                      cdkDrag
-                      [cdkDragData]="t"
-                      (click)="openDetailModal(t)"
-                    >
-                      <!-- Card Top Row: Issue Type & Priority -->
-                      <div class="card-top">
-                        <div class="type-badge-wrap">
-                          <span class="badge" [class]="'badge-' + t.type">
-                            <i [class]="getTypeIcon(t.type)"></i> {{ t.type }}
-                          </span>
-                          <span class="badge" [class]="'badge-' + t.priority">
-                            {{ t.priority }}
-                          </span>
-                        </div>
-                        <i class="fi fi-rr-grip-dots-vertical drag-grip" title="Drag to move"></i>
-                      </div>
-
-                      <!-- Card Title -->
-                      <h4 class="card-title">{{ t.title }}</h4>
-
-                      <!-- Card Labels -->
-                      @if (t.labels && t.labels.length > 0) {
-                        <div class="card-labels">
-                          @for (lbl of t.labels; track lbl) {
-                            <span
-                              class="label-chip"
-                              [class.active-label]="selectedLabel() === lbl"
-                              (click)="$event.stopPropagation(); selectedLabel.set(selectedLabel() === lbl ? 'all' : lbl)"
-                              title="Filter by #{{ lbl }}"
-                            >
-                              #{{ lbl }}
-                            </span>
-                          }
-                        </div>
-                      }
-
-                      <!-- Card Footer: Assignee & Due Date -->
-                      <div class="card-bottom">
-                        <span class="assignee">
-                          <i class="fi fi-rr-user"></i> {{ t.assignee || 'Self' }}
+                @for (t of getColumnTasks(col.name); track t.id) {
+                  <div
+                    class="task-card paper-panel"
+                    cdkDrag
+                    [cdkDragData]="t"
+                    (click)="openDetailModal(t)"
+                  >
+                    <!-- Card Top Row: Issue Type & Priority -->
+                    <div class="card-top font-mono">
+                      <div class="type-badge-wrap">
+                        <span class="badge-type" [class]="t.type">
+                          <i [class]="getTypeIcon(t.type)"></i> {{ t.type }}
                         </span>
+                        <span class="badge-mono" [class.badge-urgent]="t.priority === 'urgent'" [class.badge-high]="t.priority === 'high'">
+                          {{ t.priority }}
+                        </span>
+                      </div>
+                      <i class="fi fi-rr-grip-dots-vertical drag-grip" title="Drag to move"></i>
+                    </div>
 
-                        @if (t.due_date) {
-                          <span class="due-date" [class.overdue]="isOverdue(t.due_date)">
-                            <i class="fi fi-rr-calendar"></i> {{ t.due_date }}
+                    <!-- Card Title -->
+                    <h4 class="card-title">{{ t.title }}</h4>
+
+                    <!-- Card Labels -->
+                    @if (t.labels && t.labels.length > 0) {
+                      <div class="card-labels font-mono">
+                        @for (lbl of t.labels; track lbl) {
+                          <span
+                            class="label-chip"
+                            [class.active-label]="selectedLabel() === lbl"
+                            (click)="$event.stopPropagation(); selectedLabel.set(selectedLabel() === lbl ? 'all' : lbl)"
+                            title="Filter by #{{ lbl }}"
+                          >
+                            #{{ lbl }}
                           </span>
                         }
                       </div>
+                    }
+
+                    <!-- Card Footer: Assignee & Due Date -->
+                    <div class="card-bottom font-mono">
+                      <span class="assignee">
+                        <i class="fi fi-rr-user"></i> {{ t.assignee || 'Self' }}
+                      </span>
+
+                      @if (t.due_date) {
+                        <span class="due-date" [class.overdue]="isOverdue(t.due_date)">
+                          <i class="fi fi-rr-calendar"></i> {{ t.due_date }}
+                        </span>
+                      }
                     </div>
+                  </div>
                 }
               </div>
             </div>
@@ -281,79 +283,70 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
     .tasks-page-container {
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
-      padding: 1.5rem;
+      gap: 1rem;
+      padding: 1rem;
       width: 100%;
-      margin: 0 auto;
     }
     .tasks-header {
-      padding: 1.25rem 1.5rem;
+      padding: 0.85rem 1.1rem;
       display: flex;
       flex-direction: column;
-      gap: 1.25rem;
+      gap: 0.85rem;
+      background: var(--bg-surface);
     }
     .header-main {
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 1rem;
+      gap: 0.75rem;
     }
-    .header-main h2 {
-      font-size: 1.5rem;
+    .header-left {
       display: flex;
       align-items: center;
-      gap: 0.6rem;
+      gap: 0.75rem;
     }
-    .text-cyan { color: var(--accent-cyan); }
-    .subtitle {
-      color: var(--text-muted);
-      font-size: 0.875rem;
-      margin-top: 0.2rem;
+    .header-left h2 {
+      font-size: 1.15rem;
     }
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.5rem;
     }
     .filter-bar {
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      padding-top: 1rem;
+      padding-top: 0.75rem;
       border-top: 1px solid var(--border-subtle);
       flex-wrap: wrap;
-      gap: 1rem;
+      gap: 0.75rem;
     }
     .filters-left {
       display: flex;
-      gap: 0.85rem;
+      gap: 0.65rem;
       flex-wrap: wrap;
       align-items: flex-end;
     }
     .filter-group {
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.2rem;
     }
     .filter-label {
-      font-size: 0.7rem;
-      color: var(--text-subtle);
+      font-size: 0.675rem;
+      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.04em;
     }
     .filter-select {
-      width: 145px;
-      padding: 0.35rem 0.6rem;
-      font-size: 0.825rem;
+      width: 130px;
+      padding: 0.25rem 0.45rem;
+      font-size: 0.775rem;
     }
     .reset-btn {
-      padding: 0.35rem 0.6rem;
-      font-size: 0.8rem;
       color: var(--accent-rose);
-    }
-    .reset-btn:hover {
-      background: rgba(244, 63, 94, 0.1);
     }
     .search-box {
       position: relative;
@@ -361,121 +354,94 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
     }
     .search-icon {
       position: absolute;
-      left: 0.75rem;
+      left: 0.55rem;
       top: 50%;
       transform: translateY(-50%);
-      color: var(--text-subtle);
-      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
     }
     .search-input {
-      padding-left: 2.2rem;
-      width: 220px;
-      font-size: 0.825rem;
+      padding-left: 1.8rem;
+      width: 180px;
+      font-size: 0.775rem;
     }
     .empty-board {
-      padding: 4rem 2rem;
+      padding: 3rem 1.5rem;
       text-align: center;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 1rem;
+      gap: 0.75rem;
     }
     .empty-board-icon {
-      font-size: 2.5rem;
+      font-size: 2rem;
       color: var(--accent-cyan);
     }
     .empty-board h3 {
-      font-size: 1.25rem;
+      font-size: 1.1rem;
       color: var(--text-main);
     }
     .empty-board p {
       color: var(--text-muted);
-      font-size: 0.9rem;
-      max-width: 450px;
+      font-size: 0.825rem;
+      max-width: 400px;
     }
     .kanban-board {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
       align-items: start;
     }
     .kanban-column {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
-      padding: 1rem;
-      min-height: 580px;
+      gap: 0.75rem;
+      padding: 0.85rem;
+      min-height: 520px;
       background: var(--bg-surface);
     }
     .column-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-bottom: 0.75rem;
+      padding-bottom: 0.45rem;
       border-bottom: 1px solid var(--border-subtle);
     }
     .column-title {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.45rem;
     }
     .column-title h3 {
-      font-size: 0.95rem;
+      font-size: 0.875rem;
       font-weight: 600;
-    }
-    .col-count {
-      font-size: 0.725rem;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 0.1rem 0.45rem;
-      border-radius: var(--radius-full);
-      color: var(--text-muted);
-    }
-    .col-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
     }
     .column-cards {
       display: flex;
       flex-direction: column;
-      gap: 0.85rem;
+      gap: 0.65rem;
       flex: 1;
-      min-height: 480px;
-    }
-    .empty-column {
-      padding: 3rem 1rem;
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--text-subtle);
-      border: 1px dashed var(--border-subtle);
-      border-radius: var(--radius-md);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    .empty-column i {
-      font-size: 1.25rem;
-      opacity: 0.5;
+      min-height: 420px;
     }
     .task-card {
-      padding: 1rem;
+      padding: 0.75rem 0.85rem;
       display: flex;
       flex-direction: column;
-      gap: 0.65rem;
-      background: var(--bg-card);
+      gap: 0.55rem;
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
       cursor: grab;
-      transition: var(--transition);
+      transition: var(--transition-fast);
       user-select: none;
     }
     .task-card:active {
       cursor: grabbing;
     }
     .task-card:hover {
-      border-color: var(--border-active);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+      background: var(--bg-surface-hover);
+      border-color: var(--border-medium);
     }
     .card-top {
       display: flex;
@@ -484,64 +450,62 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
     }
     .type-badge-wrap {
       display: flex;
-      gap: 0.4rem;
+      gap: 0.35rem;
       align-items: center;
     }
     .drag-grip {
-      color: var(--text-subtle);
-      font-size: 0.85rem;
-      opacity: 0.5;
+      color: var(--text-muted);
+      font-size: 0.8rem;
     }
     .card-title {
-      font-size: 0.9rem;
+      font-size: 0.825rem;
       font-weight: 600;
       color: var(--text-main);
-      line-height: 1.35;
+      line-height: 1.3;
     }
     .card-labels {
       display: flex;
-      gap: 0.3rem;
+      gap: 0.25rem;
       flex-wrap: wrap;
     }
     .label-chip {
-      font-size: 0.7rem;
-      color: var(--accent-cyan);
-      background: rgba(6, 182, 212, 0.1);
-      padding: 0.1rem 0.45rem;
-      border-radius: var(--radius-sm);
+      font-size: 0.675rem;
+      color: var(--text-muted);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      padding: 0.05rem 0.35rem;
+      border-radius: var(--radius-xs);
       cursor: pointer;
-      transition: var(--transition);
     }
     .label-chip:hover, .label-chip.active-label {
-      background: var(--accent-cyan);
-      color: #ffffff;
+      background: var(--text-main);
+      color: var(--bg-canvas);
     }
     .card-bottom {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 0.75rem;
-      color: var(--text-subtle);
-      padding-top: 0.4rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.725rem;
+      color: var(--text-muted);
+      padding-top: 0.35rem;
+      border-top: 1px solid var(--border-subtle);
     }
     .due-date.overdue {
-      color: #ef4444;
+      color: var(--accent-rose);
       font-weight: 600;
     }
-    /* CDK Drag & Drop styles */
+
     .cdk-drag-preview {
       box-sizing: border-box;
-      border-radius: var(--radius-md);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.7);
-      background: var(--bg-card);
-      padding: 1rem;
-      border: 1px solid var(--accent-cyan);
+      border-radius: var(--radius-xs);
+      background: var(--bg-surface);
+      padding: 0.75rem 0.85rem;
+      border: 1px solid var(--border-active);
     }
     .cdk-drag-placeholder {
-      opacity: 0.25;
-      border: 2px dashed var(--accent-cyan);
-      border-radius: var(--radius-md);
+      opacity: 0.3;
+      border: 1px dashed var(--border-medium);
+      border-radius: var(--radius-xs);
     }
     .cdk-drag-animating {
       transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
@@ -568,7 +532,8 @@ export class TasksComponent {
   constructor(
     public taskService: TaskService,
     public projectService: ProjectService,
-    public workflowService: WorkflowService
+    public workflowService: WorkflowService,
+    public workspaceService: WorkspaceService
   ) {
     const projList = this.projectService.projects();
     if (projList.length > 0) {
@@ -624,12 +589,10 @@ export class TasksComponent {
       if (type !== 'all' && t.type !== type) return false;
       if (priority !== 'all' && t.priority !== priority) return false;
 
-      // Label filter
       if (label !== 'all') {
         if (!t.labels || !t.labels.some(l => l.toLowerCase() === label)) return false;
       }
 
-      // Due Date Filter logic
       if (dueFilter !== 'all') {
         if (dueFilter === 'has_date' && !t.due_date) return false;
         if (dueFilter === 'no_date' && t.due_date) return false;
@@ -648,7 +611,6 @@ export class TasksComponent {
         }
       }
 
-      // Text search
       if (q) {
         const matchesTitle = t.title.toLowerCase().includes(q);
         const matchesDesc = t.description?.toLowerCase().includes(q);
@@ -675,7 +637,7 @@ export class TasksComponent {
       case 'story': return 'fi fi-rr-book-alt';
       case 'bug': return 'fi fi-rr-bug';
       case 'epic': return 'fi fi-rr-rocket-takeoff';
-      default: return 'fi fi-rr-checkbox';
+      default: return 'fi fi-rr-check-circle';
     }
   }
 
