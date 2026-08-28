@@ -24,8 +24,15 @@ self.addEventListener('install', (event) => {
       return cache.addAll(STATIC_ASSETS).catch((err) => {
         console.warn('[DevFlow SW] Static asset cache warning:', err);
       });
-    }).then(() => self.skipWaiting())
+    })
   );
+});
+
+// Message Event: Skip waiting when client prompts update reload
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Activate Event: Clean up stale caches

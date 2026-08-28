@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { WorkspaceService, WorkspaceSection } from './core/services/workspace.service';
 import { SyncService } from './core/services/sync.service';
+import { UpdateService } from './core/services/update.service';
 import { TodayComponent } from './features/today/today';
 import { ProjectsComponent } from './features/projects/projects';
 import { TasksComponent } from './features/tasks/tasks';
@@ -36,7 +37,8 @@ export class App {
 
   constructor(
     public workspaceService: WorkspaceService,
-    public syncService: SyncService
+    public syncService: SyncService,
+    public updateService: UpdateService
   ) {}
 
   toggleSidebar() {

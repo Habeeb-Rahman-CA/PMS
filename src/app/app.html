@@ -3,27 +3,19 @@
   <header class="app-header paper-panel">
     <!-- Left End: System Name & Mobile Menu Toggle -->
     <div class="header-brand font-mono">
-      <button
-        class="mobile-menu-toggle btn btn-ghost btn-xs"
-        (click)="mobileMenuOpen.set(!mobileMenuOpen())"
-        title="Toggle Menu"
-      >
+      <button class="mobile-menu-toggle btn btn-ghost btn-xs" (click)="mobileMenuOpen.set(!mobileMenuOpen())"
+        title="Toggle Menu">
         <i [class]="mobileMenuOpen() ? 'fi fi-rr-cross' : 'fi fi-rr-menu-burger'"></i>
       </button>
-      <span
-        [class]="syncService.isOnline() ? 'status-dot dot-emerald' : 'status-dot dot-amber'"
-        [title]="syncService.isOnline() ? 'Network Online' : 'Offline Mode - Queueing mutations'"
-      ></span>
+      <span [class]="syncService.isOnline() ? 'status-dot dot-emerald' : 'status-dot dot-amber'"
+        [title]="syncService.isOnline() ? 'Network Online' : 'Offline Mode - Queueing mutations'"></span>
       <span class="brand-title">DEVFLOW</span>
     </div>
 
     <!-- Middle: Command Palette Search Bar -->
     <div class="header-center">
-      <button
-        class="cmd-search-bar font-mono"
-        (click)="workspaceService.toggleCommandPalette()"
-        title="Search or type a command"
-      >
+      <button class="cmd-search-bar font-mono" (click)="workspaceService.toggleCommandPalette()"
+        title="Search or type a command">
         <i class="fi fi-rr-search search-icon"></i>
         <span class="search-placeholder">Search workspace, tasks, projects...</span>
       </button>
@@ -32,15 +24,12 @@
     <!-- Right End: Offline Badge & Help Icon -->
     <div class="header-right font-mono">
       @if (!syncService.isOnline()) {
-        <span class="badge-mono badge-amber" title="Offline Mode - Changes saved locally">
-          <i class="fi fi-rr-wifi-slash"></i> OFFLINE ({{ syncService.pendingSyncQueue().length }})
-        </span>
+      <span class="badge-mono badge-amber" title="Offline Mode - Changes saved locally">
+        <i class="fi fi-rr-wifi-slash"></i> OFFLINE ({{ syncService.pendingSyncQueue().length }})
+      </span>
       }
-      <button
-        class="btn btn-ghost btn-sm help-btn"
-        (click)="workspaceService.toggleShortcutsModal()"
-        title="Help & Reference (?)"
-      >
+      <button class="btn btn-ghost btn-sm help-btn" (click)="workspaceService.toggleShortcutsModal()"
+        title="Help & Reference (?)">
         <i class="fi fi-rr-interrogation help-icon"></i>
       </button>
     </div>
@@ -48,88 +37,92 @@
 
   <!-- Mobile Sidebar Backdrop Overlay -->
   @if (mobileMenuOpen()) {
-    <div class="mobile-sidebar-backdrop" (click)="mobileMenuOpen.set(false)"></div>
+  <div class="mobile-sidebar-backdrop" (click)="mobileMenuOpen.set(false)"></div>
   }
 
   <!-- App Body Layout: Left Sidebar + Main Workspace View -->
   <div class="app-body">
     <!-- Left Sidebar: Collapsible Workspace Navigation -->
-    <aside
-      class="app-sidebar paper-panel font-mono"
-      [class.collapsed]="sidebarCollapsed()"
-      [class.mobile-open]="mobileMenuOpen()"
-    >
+    <aside class="app-sidebar paper-panel font-mono" [class.collapsed]="sidebarCollapsed()"
+      [class.mobile-open]="mobileMenuOpen()">
       <div class="sidebar-header">
         @if (!sidebarCollapsed() || mobileMenuOpen()) {
-          <span class="sidebar-label">WORKSPACE NAV</span>
+        <span class="sidebar-label">WORKSPACE NAV</span>
         }
-        <button
-          class="collapse-toggle-btn desktop-only"
-          (click)="toggleSidebar()"
-          [title]="sidebarCollapsed() ? 'Expand Sidebar' : 'Collapse Sidebar'"
-        >
+        <button class="collapse-toggle-btn desktop-only" (click)="toggleSidebar()"
+          [title]="sidebarCollapsed() ? 'Expand Sidebar' : 'Collapse Sidebar'">
           <i [class]="sidebarCollapsed() ? 'fi fi-rr-angle-small-right' : 'fi fi-rr-angle-small-left'"></i>
         </button>
       </div>
 
       <nav class="sidebar-nav">
         @for (ws of workspaceService.workspaces; track ws.id) {
-          <button
-            class="sidebar-tab-btn"
-            [class.active]="workspaceService.activeWorkspace() === ws.id"
-            (click)="selectWorkspace(ws.id)"
-            [title]="ws.code + ' ' + ws.name"
-          >
-            <div class="tab-left">
-              <i [class]="ws.icon"></i>
-              @if (!sidebarCollapsed() || mobileMenuOpen()) {
-                <span class="ws-code">{{ ws.code }}</span>
-                <span class="ws-name">{{ ws.name }}</span>
-              }
-            </div>
-          </button>
+        <button class="sidebar-tab-btn" [class.active]="workspaceService.activeWorkspace() === ws.id"
+          (click)="selectWorkspace(ws.id)" [title]="ws.code + ' ' + ws.name">
+          <div class="tab-left">
+            <i [class]="ws.icon"></i>
+            @if (!sidebarCollapsed() || mobileMenuOpen()) {
+            <span class="ws-code">{{ ws.code }}</span>
+            <span class="ws-name">{{ ws.name }}</span>
+            }
+          </div>
+        </button>
         }
       </nav>
     </aside>
 
     <!-- Main Active Workspace View -->
     <main class="app-main">
+      <!-- App Update Available Notice Banner -->
+      @if (updateService.updateAvailable()) {
+      <div class="update-banner-strip paper-panel font-mono">
+        <div class="update-banner-left">
+          <i class="fi fi-rr-refresh text-cyan"></i>
+          <strong>NEW VERSION AVAILABLE</strong>
+          <span class="update-banner-msg">A new update for DevFlow PWA is ready.</span>
+        </div>
+        <button class="btn btn-primary btn-xs" (click)="updateService.activateUpdate()">
+          <i class="fi fi-rr-rotate-right"></i> Reload now
+        </button>
+      </div>
+      }
+
       <!-- Offline Mode Notice Banner -->
       @if (!syncService.isOnline()) {
-        <div class="offline-banner-strip paper-panel font-mono">
-          <div class="offline-banner-left">
-            <span class="status-dot dot-amber"></span>
-            <strong>OFFLINE MODE</strong>
-            <span class="offline-banner-msg">Your changes will automatically sync when you're back online.</span>
-          </div>
-          @if (syncService.pendingSyncQueue().length > 0) {
-            <span class="badge-mono badge-amber">{{ syncService.pendingSyncQueue().length }} QUEUED</span>
-          }
+      <div class="offline-banner-strip paper-panel font-mono">
+        <div class="offline-banner-left">
+          <span class="status-dot dot-amber"></span>
+          <strong>OFFLINE MODE</strong>
+          <span class="offline-banner-msg">Your changes will automatically sync when you're back online.</span>
         </div>
+        @if (syncService.pendingSyncQueue().length > 0) {
+        <span class="badge-mono badge-amber">{{ syncService.pendingSyncQueue().length }} QUEUED</span>
+        }
+      </div>
       }
 
       @switch (workspaceService.activeWorkspace()) {
-        @case ('01 TODAY') {
-          <app-today />
-        }
-        @case ('02 PROJECTS') {
-          <app-projects />
-        }
-        @case ('03 BACKLOG') {
-          <app-backlog />
-        }
-        @case ('04 TASKS') {
-          <app-tasks />
-        }
-        @case ('05 CALENDAR') {
-          <app-calendar />
-        }
-        @case ('06 ARCHIVE') {
-          <app-archive />
-        }
-        @default {
-          <app-today />
-        }
+      @case ('01 TODAY') {
+      <app-today />
+      }
+      @case ('02 PROJECTS') {
+      <app-projects />
+      }
+      @case ('03 BACKLOG') {
+      <app-backlog />
+      }
+      @case ('04 TASKS') {
+      <app-tasks />
+      }
+      @case ('05 CALENDAR') {
+      <app-calendar />
+      }
+      @case ('06 ARCHIVE') {
+      <app-archive />
+      }
+      @default {
+      <app-today />
+      }
       }
     </main>
   </div>
@@ -138,11 +131,11 @@
   <footer class="app-footer paper-panel font-mono">
     <div class="footer-left">
       @if (syncService.isOnline()) {
-        <span class="status-dot dot-emerald"></span>
-        <span>ONLINE</span>
+      <span class="status-dot dot-emerald"></span>
+      <span>ONLINE</span>
       } @else {
-        <span class="status-dot dot-amber"></span>
-        <span class="text-amber">OFFLINE (QUEUED: {{ syncService.pendingSyncQueue().length }})</span>
+      <span class="status-dot dot-amber"></span>
+      <span class="text-amber">OFFLINE (QUEUED: {{ syncService.pendingSyncQueue().length }})</span>
       }
       <span class="footer-sep">•</span>
       <span>ACTIVE: {{ workspaceService.activeWorkspace() }}</span>
@@ -155,14 +148,14 @@
 
   <!-- Global Modals -->
   @if (workspaceService.commandPaletteOpen()) {
-    <app-command-palette />
+  <app-command-palette />
   }
 
   @if (workspaceService.shortcutsModalOpen()) {
-    <app-shortcuts-modal />
+  <app-shortcuts-modal />
   }
 
   @if (workspaceService.globalCreateTaskModalOpen()) {
-    <app-task-modal (close)="workspaceService.closeCreateTaskModal()" />
+  <app-task-modal (close)="workspaceService.closeCreateTaskModal()" />
   }
 </div>
