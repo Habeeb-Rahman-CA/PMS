@@ -1,8 +1,9 @@
 import { Component, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import * as XLSX from 'xlsx';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
-import { Task } from '../../core/models/project.model';
+import { Task, Project } from '../../core/models/project.model';
 
 @Component({
   selector: 'app-archive',
@@ -18,8 +19,8 @@ import { Task } from '../../core/models/project.model';
         </div>
 
         <div class="view-header-right font-mono">
-          <button class="btn btn-secondary btn-sm" (click)="exportData()">
-            <i class="fi fi-rr-download"></i> Export JSON
+          <button class="btn btn-primary btn-sm" (click)="exportData()">
+            <i class="fi fi-rr-file-excel"></i> Export
           </button>
         </div>
       </div>
@@ -89,22 +90,6 @@ import { Task } from '../../core/models/project.model';
       flex-direction: column;
       gap: 1rem;
       padding: 1rem;
-    }
-    .archive-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.85rem 1.1rem;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-    .header-left h2 {
-      font-size: 1.15rem;
     }
 
     .archive-grid {
@@ -223,21 +208,75 @@ export class ArchiveComponent {
   activities = computed(() => this.projectService.activities());
 
   exportData() {
-    const data = {
-      projects: this.projectService.projects(),
-      tasks: this.taskService.tasks(),
-      activities: this.projectService.activities(),
-      exportedAt: new Date().toISOString()
-    };
+    const wb = XLSX.utils.book_new();
 
-    const jsonStr = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `devflow-workspace-backup-${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // 1. Sheet: Completed Tasks
+    const completedRows = this.completedTasks().map(t => ({
+      'Task ID': `TASK-${t.id.slice(0, 4).toUpperCase()}`,
+      'Title / Summary': t.title,
+      'Issue Type': (t.type || 'task').toUpperCase(),
+      'Priority': (t.priority || 'medium').toUpperCase(),
+      'Status': 'COMPLETED',
+      'Project Name': this.getProjectName(t.project_id),
+      'Assignee': t.assignee || 'Unassigned',
+      'Due Date': t.due_date || 'N/A',
+      'Created Date': t.created_at ? new Date(t.created_at).toLocaleDateString() : 'N/A'
+    }));
+    const completedWs = XLSX.utils.json_to_sheet(completedRows);
+    XLSX.utils.book_append_sheet(wb, completedWs, 'Completed Tasks');
+
+    // 2. Sheet: All Workspace Tasks
+    const allTaskRows = this.taskService.tasks().map(t => ({
+      'Task ID': `TASK-${t.id.slice(0, 4).toUpperCase()}`,
+      'Title / Summary': t.title,
+      'Issue Type': (t.type || 'task').toUpperCase(),
+      'Priority': (t.priority || 'medium').toUpperCase(),
+      'Status': t.status.toUpperCase(),
+      'Completed': t.completed ? 'YES' : 'NO',
+      'Project Name': this.getProjectName(t.project_id),
+      'Assignee': t.assignee || 'Unassigned',
+      'Due Date': t.due_date || 'N/A',
+      'Created Date': t.created_at ? new Date(t.created_at).toLocaleDateString() : 'N/A'
+    }));
+    const allTasksWs = XLSX.utils.json_to_sheet(allTaskRows);
+    XLSX.utils.book_append_sheet(wb, allTasksWs, 'All Tasks');
+
+    // 3. Sheet: Projects Summary
+    const projectRows = this.projectService.projects().map(p => {
+      const pTasks = this.taskService.tasks().filter(t => t.project_id === p.id);
+      const pDone = pTasks.filter(t => t.completed || t.status.toLowerCase() === 'done').length;
+      const progress = pTasks.length > 0 ? Math.round((pDone / pTasks.length) * 100) : 0;
+      return {
+        'Project Key': `PROJ-${p.id.slice(0, 4).toUpperCase()}`,
+        'Project Name': p.name,
+        'Description': p.description || '',
+        'Status': p.status.toUpperCase(),
+        'Total Tasks': pTasks.length,
+        'Completed Tasks': pDone,
+        'Progress (%)': `${progress}%`
+      };
+    });
+    const projectsWs = XLSX.utils.json_to_sheet(projectRows);
+    XLSX.utils.book_append_sheet(wb, projectsWs, 'Projects Summary');
+
+    // 4. Sheet: Activity Log Stream
+    const activityRows = this.activities().map(act => ({
+      'Action': act.action,
+      'Description': act.description,
+      'Timestamp': this.formatDate(act.timestamp)
+    }));
+    const activitiesWs = XLSX.utils.json_to_sheet(activityRows);
+    XLSX.utils.book_append_sheet(wb, activitiesWs, 'Activity Stream');
+
+    // Generate & download .xlsx file
+    const filename = `devflow-workspace-export-${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, filename);
+  }
+
+  getProjectName(id: string): string {
+    if (!id) return 'General';
+    const p = this.projectService.projects().find(item => item.id === id);
+    return p ? p.name : 'General';
   }
 
   formatDate(iso: string): string {
