@@ -22,8 +22,7 @@ import { Task, TaskPriority, TaskType, Workflow } from '../../core/models/projec
               <span>{{ isEditMode ? 'Edit Task Details' : 'Create New Task' }}</span>
             </h3>
           </div>
-          <button class="btn btn-ghost btn-xs close-btn" (click)="close.emit()" title="Close (Esc)">
-            <span class="key-badge">ESC</span>
+          <button class="btn btn-ghost btn-xs close-btn" (click)="close.emit()" title="Close">
             <i class="fi fi-rr-cross"></i>
           </button>
         </div>

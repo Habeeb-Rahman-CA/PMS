@@ -34,7 +34,6 @@ interface PaletteItem {
             (ngModelChange)="onSearchInput($event)"
             (keydown)="onKeydown($event)"
           />
-          <span class="key-badge">ESC</span>
         </div>
 
         <!-- Results List Container -->
@@ -63,7 +62,7 @@ interface PaletteItem {
                   </div>
 
                   @if (item.badge) {
-                    <span class="key-badge">{{ item.badge }}</span>
+                    <span class="badge-mono">{{ item.badge }}</span>
                   }
                 </div>
               }
@@ -74,9 +73,7 @@ interface PaletteItem {
         <!-- Palette Footer -->
         <div class="palette-footer font-mono">
           <div class="footer-hint">
-            <span class="key-badge">↑</span> <span class="key-badge">↓</span> Navigate
-            <span class="key-badge">↵</span> Select
-            <span class="key-badge">1-6</span> Quick Jump
+            <span>Use Arrow Keys to Navigate & Enter to Select</span>
           </div>
           <span class="text-subtle">DEVFLOW CMD PALETTE</span>
         </div>
@@ -228,7 +225,7 @@ export class CommandPaletteComponent implements AfterViewInit {
         type: 'workspace',
         title: `Workspace: ${ws.name}`,
         subtitle: ws.desc,
-        badge: `[${ws.key}]`,
+        badge: ws.code,
         icon: ws.icon,
         action: () => {
           this.workspaceService.setWorkspace(ws.id);
@@ -271,7 +268,7 @@ export class CommandPaletteComponent implements AfterViewInit {
         type: 'task',
         title: t.title,
         subtitle: `Task #${t.id.slice(0, 6)} • Status: ${t.status} • Priority: ${t.priority}`,
-        badge: t.type,
+        badge: t.type.toUpperCase(),
         icon: t.type === 'bug' ? 'fi fi-rr-bug' : 'fi fi-rr-check-circle',
         action: () => {
           this.workspaceService.setWorkspace('04 TASKS');

@@ -13,7 +13,7 @@ import { WorkspaceService } from '../../core/services/workspace.service';
         <div class="modal-header">
           <div class="header-left">
             <span class="badge-mono">DEVFLOW GUIDE</span>
-            <h3><i class="fi fi-rr-interrogation text-cyan"></i> Workspace Help & Shortcuts</h3>
+            <h3><i class="fi fi-rr-interrogation text-cyan"></i> Workspace Help & Keyboard Shortcuts</h3>
           </div>
           <button class="btn btn-ghost btn-xs close-btn" (click)="close()" title="Close (Esc)">
             <span class="key-badge">ESC</span>
@@ -48,11 +48,11 @@ import { WorkspaceService } from '../../core/services/workspace.service';
 
         <!-- Tab Body Content -->
         <div class="modal-body">
-          <!-- TAB 1: KEYBOARD SHORTCUTS -->
+          <!-- TAB 1: KEYBOARD SHORTCUTS REFERENCE -->
           @if (activeTab() === 'shortcuts') {
             <div class="tab-pane">
               <div class="shortcuts-grid">
-                <!-- Column 1: Workspace Switching (1-6) -->
+                <!-- Column 1: Workspace Navigation (1-6) -->
                 <div class="shortcuts-column">
                   <div class="column-header">
                     <i class="fi fi-rr-layout-fluid text-cyan"></i>
@@ -138,7 +138,7 @@ import { WorkspaceService } from '../../core/services/workspace.service';
 
                     <div class="shortcut-item">
                       <div class="item-info">
-                        <span class="item-title">System Shortcuts Guide</span>
+                        <span class="item-title">System Reference Guide</span>
                         <span class="item-desc">Toggle this help & documentation overlay</span>
                       </div>
                       <span class="key-badge">?</span>
@@ -212,10 +212,10 @@ import { WorkspaceService } from '../../core/services/workspace.service';
                     <span>Omni Command Palette</span>
                   </div>
                   <p class="card-desc">
-                    Instant fuzzy search across your projects, task titles, descriptions, and workspace actions. Press <code>⌘K</code> or click the top search bar anytime to trigger.
+                    Instant fuzzy search across your projects, task titles, descriptions, and workspace actions. Click the top search bar anytime to trigger.
                   </p>
                   <div class="card-tags">
-                    <span class="badge-mono">⌘K Hotkey</span>
+                    <span class="badge-mono">Search Palette</span>
                     <span class="badge-mono">Instant Search</span>
                     <span class="badge-mono">Quick Actions</span>
                   </div>
@@ -270,7 +270,7 @@ import { WorkspaceService } from '../../core/services/workspace.service';
         <div class="modal-footer">
           <div class="footer-left">
             <span class="status-dot dot-emerald"></span>
-            <span>PRESS <strong>1-6</strong> TO SWITCH WORKSPACE • PRESS <strong>⌘K</strong> TO SEARCH</span>
+            <span>PRESS <strong>1-6</strong> FOR WORKSPACES • PRESS <strong>⌘K</strong> FOR SEARCH • PRESS <strong>N</strong> FOR TASK</span>
           </div>
           <button class="btn btn-secondary btn-xs" (click)="close()">Got it</button>
         </div>
