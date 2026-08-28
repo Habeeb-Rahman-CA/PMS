@@ -12,7 +12,7 @@
 2. **Developer-First Data Model**: Built-in support for code repos, technical notes, bug reports, and task stories.
 3. **Personal-First Isolation**: No multi-tenant permissions overhead; simple single-user auth with strict PostgreSQL Row-Level Security (RLS).
 4. **Anywhere Access**: Responsive layout + Progressive Web App (PWA) with offline support.
-5. **Zero Infrastructure Management**: Jamstack architecture using Cloudflare Pages for edge hosting and Supabase for backend services.
+5. **Zero Infrastructure Management**: Jamstack architecture using Vercel for edge hosting and Supabase for backend services.
 
 ---
 
@@ -47,7 +47,7 @@
                                     | Continuous Deployment (Git push)
 +-----------------------------------|-----------------------------------+
 |                         HOSTING & INFRASTRUCTURE                      |
-|                     Cloudflare Pages Edge Network                     |
+|                        Vercel Global Edge Network                      |
 +-----------------------------------------------------------------------+
 ```
 
@@ -62,7 +62,7 @@
 | **Backend & Auth** | Supabase (BaaS) | Managed REST/Realtime API and Supabase Auth |
 | **Database** | PostgreSQL | Relational storage with Row-Level Security (RLS) policies |
 | **App Delivery** | PWA (Service Worker + Manifest) | Fast loading on desktop & mobile with offline resilience |
-| **Hosting & CI/CD** | Cloudflare Pages + GitHub Integration | Automated static build deployment at the edge |
+| **Hosting & CI/CD** | Vercel + GitHub Integration | Automated static build deployment at the edge |
 
 ---
 
@@ -177,11 +177,11 @@ src/
 
 ---
 
-## 8. Deployment Architecture (Cloudflare Pages)
+## 8. Deployment Architecture (Vercel)
 
 - **Build Output Directory**: `dist/bilo/browser`
 - **Build Command**: `npm run build`
-- **Single Page Application Fallback**: SPA routing enabled (`/200.html` or `/index.html` fallback rule).
+- **Single Page Application Fallback**: SPA rewrite rules configured in `vercel.json` (`/(.*)` -> `/index.html`).
 - **Environment Variables**:
   - `SUPABASE_URL`
   - `SUPABASE_ANON_KEY`
