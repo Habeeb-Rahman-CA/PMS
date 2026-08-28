@@ -285,6 +285,34 @@
   box-sizing: border-box;
 }
 
+/* Offline Notification Banner Strip */
+.offline-banner-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1.15rem;
+  background: var(--bg-surface-subtle);
+  border-bottom: 1px solid var(--accent-amber);
+  border-radius: var(--radius-none);
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.offline-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-main);
+  flex-wrap: wrap;
+}
+
+.offline-banner-msg {
+  color: var(--text-muted);
+  font-size: 0.725rem;
+}
+
+
 /* Clean Paper Footer */
 .app-footer {
   flex-shrink: 0;

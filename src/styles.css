@@ -337,3 +337,40 @@ code, pre, .font-mono {
 .text-purple { color: var(--accent-purple); }
 .text-muted { color: var(--text-muted); }
 .text-subtle { color: var(--text-subtle); }
+
+.badge-amber {
+  background: #fef3c7;
+  color: #d97706;
+  border-color: #fcd34d;
+}
+
+/* Skeleton Loading Utilities */
+@keyframes skeletonPulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 0.25; }
+  100% { opacity: 0.6; }
+}
+
+.skeleton-line {
+  background: var(--bg-surface-hover);
+  border-radius: var(--radius-xs);
+  height: 14px;
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-box {
+  background: var(--bg-surface-hover);
+  border-radius: var(--radius-xs);
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-card {
+  padding: 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+

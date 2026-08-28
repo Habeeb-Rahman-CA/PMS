@@ -47,8 +47,20 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
       </div>
 
       <!-- 2. Main Projects Cards Grid -->
-      <div class="projects-grid">
-        @for (p of filteredProjects(); track p.id) {
+      @if (projectService.loading()) {
+        <div class="projects-grid">
+          @for (i of [1, 2, 3]; track i) {
+            <div class="skeleton-card paper-panel font-mono">
+              <div class="skeleton-line" style="width: 50%; height: 18px;"></div>
+              <div class="skeleton-line" style="width: 85%;"></div>
+              <div class="skeleton-line" style="width: 70%;"></div>
+              <div class="skeleton-box" style="height: 48px; margin-top: 0.5rem;"></div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="projects-grid">
+          @for (p of filteredProjects(); track p.id) {
           @let summary = getProjectSummary(p.id);
           @let workflows = workflowService.getWorkflowsForProject(p.id);
 
@@ -176,6 +188,7 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
           </div>
         </div>
       </div>
+    }
 
       <!-- Modals -->
       @if (showProjectModal()) {
@@ -487,7 +500,7 @@ export class ProjectsComponent {
     public taskService: TaskService,
     public workflowService: WorkflowService,
     public workspaceService: WorkspaceService
-  ) {}
+  ) { }
 
   filteredProjects = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();

@@ -94,6 +94,20 @@
 
     <!-- Main Active Workspace View -->
     <main class="app-main">
+      <!-- Offline Mode Notice Banner -->
+      @if (!syncService.isOnline()) {
+        <div class="offline-banner-strip paper-panel font-mono">
+          <div class="offline-banner-left">
+            <span class="status-dot dot-amber"></span>
+            <strong>OFFLINE MODE</strong>
+            <span class="offline-banner-msg">Your changes will automatically sync when you're back online.</span>
+          </div>
+          @if (syncService.pendingSyncQueue().length > 0) {
+            <span class="badge-mono badge-amber">{{ syncService.pendingSyncQueue().length }} QUEUED</span>
+          }
+        </div>
+      }
+
       @switch (workspaceService.activeWorkspace()) {
         @case ('01 TODAY') {
           <app-today />

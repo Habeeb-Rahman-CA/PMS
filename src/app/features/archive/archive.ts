@@ -25,7 +25,20 @@ import { Task, Project } from '../../core/models/project.model';
         </div>
       </div>
 
-      <div class="archive-grid">
+      @if (taskService.loading()) {
+        <div class="archive-grid font-mono">
+          <div class="paper-panel archive-box">
+            <div class="box-body" style="padding: 1rem;">
+              @for (i of [1, 2, 3]; track i) {
+                <div class="skeleton-card" style="margin-bottom: 0.5rem;">
+                  <div class="skeleton-line" style="width: 70%;"></div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      } @else {
+        <div class="archive-grid">
         <!-- Completed Tasks Section -->
         <div class="paper-panel archive-box">
           <div class="box-header">
@@ -82,6 +95,7 @@ import { Task, Project } from '../../core/models/project.model';
           </div>
         </div>
       </div>
+    }
     </div>
   `,
   styles: [`

@@ -29,7 +29,18 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
       </div>
 
       <!-- ROW 1: 4 Stat Cards (Last 7 Days & Due Soon) -->
-      <div class="stats-row">
+      @if (taskService.loading()) {
+        <div class="stats-row">
+          @for (i of [1, 2, 3, 4]; track i) {
+            <div class="skeleton-card paper-panel font-mono">
+              <div class="skeleton-line" style="width: 40%; height: 14px;"></div>
+              <div class="skeleton-line" style="width: 60%; height: 28px; margin: 0.4rem 0;"></div>
+              <div class="skeleton-line" style="width: 80%; height: 12px;"></div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="stats-row">
         <!-- Card 1: Completed -->
         <div class="stat-card paper-panel">
           <div class="stat-top font-mono">
@@ -229,6 +240,7 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
           </div>
         </div>
       </div>
+    }
 
       <!-- Task Modals -->
       @if (showNewTaskModal()) {
