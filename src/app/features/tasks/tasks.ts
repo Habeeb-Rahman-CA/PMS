@@ -9,7 +9,6 @@ import { WorkspaceService } from '../../core/services/workspace.service';
 import { Project, Task, Workflow } from '../../core/models/project.model';
 import { TaskModalComponent } from '../../shared/components/task-modal';
 import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
-import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
 
 @Component({
   selector: 'app-tasks',
@@ -19,8 +18,7 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
     FormsModule,
     DragDropModule,
     TaskModalComponent,
-    TaskDetailModalComponent,
-    WorkflowModalComponent
+    TaskDetailModalComponent
   ],
   template: `
     <div class="tasks-page-container">
@@ -33,12 +31,6 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
           </div>
 
           <div class="header-actions">
-            @if (selectedProjectId() !== 'all') {
-              <button class="btn btn-secondary btn-sm" (click)="openWorkflowModal()">
-                <i class="fi fi-rr-settings-sliders"></i> Workflow
-              </button>
-            }
-
             <button
               class="btn btn-primary btn-sm"
               [disabled]="activeColumns().length === 0"
@@ -158,11 +150,11 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
       <!-- Kanban Board -->
       @if (activeColumns().length === 0) {
         <div class="empty-board paper-panel font-mono">
-          <i class="fi fi-rr-settings-sliders empty-board-icon"></i>
+          <i class="fi fi-rr-folder-open empty-board-icon"></i>
           <h3>No Status Workflow Configured</h3>
-          <p>You haven't created any status columns for this project yet.</p>
-          <button class="btn btn-primary btn-sm" (click)="openWorkflowModal()">
-            <i class="fi fi-rr-plus"></i> Add Status Columns
+          <p>Configure status columns for this project in the <strong>02 PROJECTS</strong> workspace.</p>
+          <button class="btn btn-secondary btn-sm" (click)="workspaceService.setWorkspace('02 PROJECTS')">
+            <i class="fi fi-rr-folder"></i> Go to Projects
           </button>
         </div>
       } @else {
@@ -268,14 +260,6 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
           (close)="closeDetailModal()"
           (editTask)="openEditModal($event)"
         ></app-task-detail-modal>
-      }
-
-      <!-- Workflow Config Modal -->
-      @if (showWorkflowModal()) {
-        <app-workflow-modal
-          [project]="getSelectedProjectObj()"
-          (close)="closeWorkflowModal()"
-        ></app-workflow-modal>
       }
     </div>
   `,
@@ -524,7 +508,6 @@ export class TasksComponent {
   searchQuery = signal<string>('');
 
   showCreateModal = signal<boolean>(false);
-  showWorkflowModal = signal<boolean>(false);
   createDefaultStatus = signal<string>('');
   editingTask = signal<Task | null>(null);
   activeDetailTask = signal<Task | null>(null);
@@ -680,14 +663,6 @@ export class TasksComponent {
   closeCreateModal() {
     this.showCreateModal.set(false);
     this.editingTask.set(null);
-  }
-
-  openWorkflowModal() {
-    this.showWorkflowModal.set(true);
-  }
-
-  closeWorkflowModal() {
-    this.showWorkflowModal.set(false);
   }
 
   openDetailModal(task: Task) {

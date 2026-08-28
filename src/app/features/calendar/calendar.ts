@@ -1,0 +1,993 @@
+import { Component, signal, computed, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { TaskService } from '../../core/services/task.service';
+import { ProjectService } from '../../core/services/project.service';
+import { WorkspaceService } from '../../core/services/workspace.service';
+import { Task } from '../../core/models/project.model';
+import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
+import { TaskModalComponent } from '../../shared/components/task-modal';
+
+export interface CalendarDayCell {
+  dayNumber: number;
+  dateStr: string; // YYYY-MM-DD
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  createdTasks: Task[];
+  closedTasks: Task[];
+  dueTasks: Task[];
+}
+
+@Component({
+  selector: 'app-calendar',
+  standalone: true,
+  imports: [CommonModule, FormsModule, TaskDetailModalComponent, TaskModalComponent],
+  template: `
+    <div class="calendar-workspace font-mono">
+      <!-- Calendar Header Strip -->
+      <div class="calendar-banner paper-panel">
+        <div class="banner-left">
+          <span class="badge-mono">05 CALENDAR</span>
+          <h2>{{ monthTitle() }}</h2>
+          <div class="nav-btn-group">
+            <button class="btn btn-secondary btn-xs" (click)="prevMonth()" title="Previous Month">
+              <i class="fi fi-rr-angle-left"></i>
+            </button>
+            <button class="btn btn-secondary btn-xs" (click)="todayMonth()" title="Jump to Current Month">
+              Today
+            </button>
+            <button class="btn btn-secondary btn-xs" (click)="nextMonth()" title="Next Month">
+              <i class="fi fi-rr-angle-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="banner-right">
+          <!-- Event Type Filter Toggles -->
+          <div class="filter-pills font-mono">
+            <button
+              class="filter-pill pill-created-toggle"
+              [class.active]="showCreated()"
+              (click)="showCreated.set(!showCreated())"
+            >
+              <i class="fi fi-rr-plus-circle"></i> Created ({{ monthCreatedCount() }})
+            </button>
+
+            <button
+              class="filter-pill pill-closed-toggle"
+              [class.active]="showClosed()"
+              (click)="showClosed.set(!showClosed())"
+            >
+              <i class="fi fi-rr-check-circle"></i> Closed ({{ monthClosedCount() }})
+            </button>
+
+            <button
+              class="filter-pill pill-due-toggle"
+              [class.active]="showDue()"
+              (click)="showDue.set(!showDue())"
+            >
+              <i class="fi fi-rr-clock"></i> Due ({{ monthDueCount() }})
+            </button>
+          </div>
+
+          <button
+            class="btn btn-secondary btn-sm"
+            [class.active]="showUnscheduledDrawer()"
+            (click)="showUnscheduledDrawer.set(!showUnscheduledDrawer())"
+            title="Toggle Unscheduled Tasks Scheduler Drawer"
+          >
+            <i class="fi fi-rr-time-fast"></i> Schedule ({{ unscheduledTasks().length }})
+          </button>
+
+          <button class="btn btn-primary btn-sm" (click)="openCreateModal()">
+            <i class="fi fi-rr-plus"></i> Create Task <span class="key-badge">N</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Layout Grid: Calendar + Unscheduled Scheduler Side Drawer -->
+      <div class="calendar-body-layout">
+        <!-- Calendar Month Grid Container -->
+        <div class="calendar-grid-panel paper-panel">
+          <!-- Weekday Headers -->
+          <div class="week-header-row font-mono">
+            <div class="week-day">SUN</div>
+            <div class="week-day">MON</div>
+            <div class="week-day">TUE</div>
+            <div class="week-day">WED</div>
+            <div class="week-day">THU</div>
+            <div class="week-day">FRI</div>
+            <div class="week-day">SAT</div>
+          </div>
+
+          <!-- Days Grid (35 or 42 cells) -->
+          <div class="days-grid font-mono">
+            @for (cell of calendarCells(); track cell.dateStr) {
+              <div
+                class="day-cell"
+                [class.other-month]="!cell.isCurrentMonth"
+                [class.today]="cell.isToday"
+                [class.has-events]="hasAnyEvents(cell)"
+                [class.drag-over]="dragOverDate() === cell.dateStr"
+                (click)="selectDayCell(cell)"
+                (dragover)="onDragOverDay($event, cell.dateStr)"
+                (dragleave)="onDragLeaveDay($event, cell.dateStr)"
+                (drop)="onDropOnDay($event, cell.dateStr)"
+              >
+                <!-- Cell Header: Date Number + Badges -->
+                <div class="cell-top">
+                  <span class="day-number" [class.today-number]="cell.isToday">
+                    {{ cell.dayNumber }}
+                  </span>
+
+                  @if (cell.isToday) {
+                    <span class="today-badge font-mono">TODAY</span>
+                  }
+                </div>
+
+                <!-- Cell Content: Draggable Event Badges -->
+                <div class="cell-events">
+                  <!-- Created Tasks -->
+                  @if (showCreated()) {
+                    @for (t of cell.createdTasks.slice(0, maxVisibleEventsPerType); track t.id) {
+                      <div
+                        class="event-pill pill-created"
+                        draggable="true"
+                        (dragstart)="onDragStartTask($event, t)"
+                        (click)="$event.stopPropagation(); openDetail(t)"
+                        [title]="'Drag to reschedule: ' + t.title"
+                      >
+                        <i class="fi fi-rr-plus-circle"></i>
+                        <span class="event-text">Created: {{ t.title }}</span>
+                      </div>
+                    }
+                  }
+
+                  <!-- Closed / Completed Tasks -->
+                  @if (showClosed()) {
+                    @for (t of cell.closedTasks.slice(0, maxVisibleEventsPerType); track t.id) {
+                      <div
+                        class="event-pill pill-closed"
+                        draggable="true"
+                        (dragstart)="onDragStartTask($event, t)"
+                        (click)="$event.stopPropagation(); openDetail(t)"
+                        [title]="'Drag to reschedule: ' + t.title"
+                      >
+                        <i class="fi fi-rr-check-circle"></i>
+                        <span class="event-text">Closed: {{ t.title }}</span>
+                      </div>
+                    }
+                  }
+
+                  <!-- Due Tasks -->
+                  @if (showDue()) {
+                    @for (t of cell.dueTasks.slice(0, maxVisibleEventsPerType); track t.id) {
+                      <div
+                        class="event-pill pill-due"
+                        draggable="true"
+                        (dragstart)="onDragStartTask($event, t)"
+                        (click)="$event.stopPropagation(); openDetail(t)"
+                        [title]="'Drag to reschedule due date: ' + t.title"
+                      >
+                        <i class="fi fi-rr-clock"></i>
+                        <span class="event-text">Due: {{ t.title }}</span>
+                      </div>
+                    }
+                  }
+
+                  <!-- Overflow counter if more events exist -->
+                  @if (getOverflowCount(cell) > 0) {
+                    <div class="event-overflow font-mono" (click)="$event.stopPropagation(); selectDayCell(cell)">
+                      +{{ getOverflowCount(cell) }} more
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Unscheduled Tasks Scheduler Side Panel -->
+        @if (showUnscheduledDrawer()) {
+          <div class="unscheduled-drawer paper-panel font-mono">
+            <div class="drawer-header">
+              <h3><i class="fi fi-rr-time-fast text-amber"></i> Unscheduled Tasks</h3>
+              <button class="btn btn-ghost btn-xs" (click)="showUnscheduledDrawer.set(false)">
+                <i class="fi fi-rr-cross"></i>
+              </button>
+            </div>
+
+            <div class="drawer-hint">
+              <i class="fi fi-rr-info text-cyan"></i>
+              <span>Drag any task below onto a calendar day cell to schedule its due date.</span>
+            </div>
+
+            <div class="unscheduled-list">
+              @if (unscheduledTasks().length === 0) {
+                <div class="empty-drawer font-mono">
+                  <i class="fi fi-rr-check-circle text-emerald"></i>
+                  <span>All tasks have scheduled due dates!</span>
+                </div>
+              } @else {
+                @for (t of unscheduledTasks(); track t.id) {
+                  <div
+                    class="unscheduled-card"
+                    draggable="true"
+                    (dragstart)="onDragStartTask($event, t)"
+                    (click)="openDetail(t)"
+                  >
+                    <div class="card-left">
+                      <i [class]="getTypeIcon(t.type)"></i>
+                      <div class="card-meta">
+                        <span class="card-title">{{ t.title }}</span>
+                        <span class="card-sub">{{ t.priority }} • {{ t.status }}</span>
+                      </div>
+                    </div>
+
+                    <div class="card-right" (click)="$event.stopPropagation()">
+                      <input
+                        type="date"
+                        class="date-picker-inline font-mono"
+                        [ngModel]="t.due_date"
+                        (ngModelChange)="scheduleTaskDirect(t.id, $event)"
+                        title="Set due date"
+                      />
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Selected Day Detail Modal Card matching App Theme -->
+      @if (selectedCell(); as sc) {
+        <div class="modal-overlay" (click)="selectedCell.set(null)">
+          <div class="modal-card day-detail-card font-mono" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+              <h3>
+                <i class="fi fi-rr-calendar text-cyan"></i>
+                <span>Task Schedule for {{ formatFullDate(sc.dateStr) }}</span>
+              </h3>
+              <button class="btn btn-ghost btn-xs" (click)="selectedCell.set(null)">
+                <i class="fi fi-rr-cross"></i>
+              </button>
+            </div>
+
+            <div class="day-summary-body">
+              <!-- Created Section -->
+              <div class="summary-section">
+                <span class="section-title text-purple">
+                  <i class="fi fi-rr-plus-circle"></i> Created Tasks ({{ sc.createdTasks.length }})
+                </span>
+                @if (sc.createdTasks.length === 0) {
+                  <div class="none-text">No tasks created on this date</div>
+                } @else {
+                  <div class="task-mini-list">
+                    @for (t of sc.createdTasks; track t.id) {
+                      <div class="task-mini-item" (click)="openDetail(t)">
+                        <i [class]="getTypeIcon(t.type)"></i>
+                        <span class="task-title">{{ t.title }}</span>
+                        <span class="badge-mono">{{ t.status }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Closed Section -->
+              <div class="summary-section">
+                <span class="section-title text-emerald">
+                  <i class="fi fi-rr-check-circle"></i> Closed Tasks ({{ sc.closedTasks.length }})
+                </span>
+                @if (sc.closedTasks.length === 0) {
+                  <div class="none-text">No tasks closed on this date</div>
+                } @else {
+                  <div class="task-mini-list">
+                    @for (t of sc.closedTasks; track t.id) {
+                      <div class="task-mini-item" (click)="openDetail(t)">
+                        <i [class]="getTypeIcon(t.type)"></i>
+                        <span class="task-title">{{ t.title }}</span>
+                        <span class="badge-mono badge-done font-mono">Done</span>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+
+              <!-- Due Section -->
+              <div class="summary-section">
+                <span class="section-title text-amber">
+                  <i class="fi fi-rr-clock"></i> Scheduled / Due Tasks ({{ sc.dueTasks.length }})
+                </span>
+                @if (sc.dueTasks.length === 0) {
+                  <div class="none-text">No tasks scheduled for this date</div>
+                } @else {
+                  <div class="task-mini-list">
+                    @for (t of sc.dueTasks; track t.id) {
+                      <div class="task-mini-item" (click)="openDetail(t)">
+                        <i [class]="getTypeIcon(t.type)"></i>
+                        <span class="task-title">{{ t.title }}</span>
+                        <span class="badge-mono">{{ t.status }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
+            <div class="modal-footer-custom font-mono">
+              <button class="btn btn-secondary btn-sm" (click)="selectedCell.set(null)">
+                Close
+              </button>
+              <button class="btn btn-primary btn-sm" (click)="createForDate(sc.dateStr)">
+                <i class="fi fi-rr-plus"></i> Schedule Task for {{ sc.dateStr }}
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Modals -->
+      @if (showCreateModal()) {
+        <app-task-modal
+          [defaultDueDate]="presetDueDate()"
+          (close)="showCreateModal.set(false); presetDueDate.set('')"
+        ></app-task-modal>
+      }
+
+      @if (activeDetailTask(); as dt) {
+        <app-task-detail-modal
+          [task]="dt"
+          (close)="activeDetailTask.set(null)"
+        ></app-task-detail-modal>
+      }
+    </div>
+  `,
+  styles: [`
+    .calendar-workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 1rem;
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+
+    /* Header Strip */
+    .calendar-banner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      padding: 0.75rem 1.1rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .banner-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .banner-left h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .nav-btn-group {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .banner-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-pills {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+    .filter-pill {
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      padding: 0.25rem 0.55rem;
+      font-size: 0.725rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: var(--transition-fast);
+    }
+    .filter-pill:hover {
+      background: var(--bg-surface-hover);
+      color: var(--text-main);
+    }
+    .filter-pill.active.pill-created-toggle { background: #f5f3ff; color: var(--accent-purple); border-color: #ddd6fe; }
+    .filter-pill.active.pill-closed-toggle { background: #f0fdf4; color: var(--accent-emerald); border-color: #bbf7d0; }
+    .filter-pill.active.pill-due-toggle { background: #fffbeb; color: var(--accent-amber); border-color: #fde68a; }
+
+    /* Calendar Layout Grid */
+    .calendar-body-layout {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+
+    .calendar-grid-panel {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      box-sizing: border-box;
+    }
+
+    .week-header-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      background: var(--bg-surface-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .week-day {
+      padding: 0.5rem;
+      text-align: center;
+      font-size: 0.725rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      border-right: 1px solid var(--border-subtle);
+    }
+    .week-day:last-child { border-right: none; }
+
+    .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      grid-auto-rows: minmax(115px, 1fr);
+    }
+
+    .day-cell {
+      padding: 0.4rem;
+      border-right: 1px solid var(--border-subtle);
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      min-width: 0;
+      overflow: hidden;
+    }
+    .day-cell:nth-child(7n) { border-right: none; }
+    .day-cell:hover {
+      background: var(--bg-surface-hover);
+    }
+    .day-cell.other-month {
+      background: var(--bg-surface-subtle);
+      opacity: 0.5;
+    }
+    .day-cell.today {
+      background: #fcfbf9;
+      border: 1.5px solid var(--text-main);
+    }
+    .day-cell.drag-over {
+      background: #f5f3ff !important;
+      border: 2px dashed var(--accent-purple) !important;
+    }
+
+    .cell-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .day-number {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .today-number {
+      color: var(--text-main);
+    }
+    .today-badge {
+      font-size: 0.6rem;
+      background: var(--text-main);
+      color: var(--bg-canvas);
+      padding: 0.05rem 0.3rem;
+      border-radius: var(--radius-xs);
+      font-weight: 700;
+    }
+
+    .cell-events {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .event-pill {
+      font-size: 0.675rem;
+      padding: 0.2rem 0.45rem;
+      border-radius: var(--radius-xs);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: grab;
+      font-family: var(--font-mono);
+    }
+    .event-pill:active { cursor: grabbing; }
+    .event-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pill-created { background: #f5f3ff; color: var(--accent-purple); border: 1px solid #ddd6fe; }
+    .pill-closed { background: #f0fdf4; color: var(--accent-emerald); border: 1px solid #bbf7d0; }
+    .pill-due { background: #fffbeb; color: var(--accent-amber); border: 1px solid #fde68a; }
+
+    .event-overflow {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-weight: 700;
+      padding: 0.1rem 0.3rem;
+      cursor: pointer;
+    }
+
+    /* Unscheduled Drawer Panel */
+    .unscheduled-drawer {
+      width: 270px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      padding: 0.85rem;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      box-sizing: border-box;
+    }
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.45rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .drawer-header h3 {
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .drawer-hint {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.4rem;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      background: var(--bg-surface-subtle);
+      padding: 0.45rem 0.65rem;
+      border-radius: var(--radius-xs);
+      line-height: 1.3;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .unscheduled-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-height: 520px;
+      overflow-y: auto;
+    }
+    .empty-drawer {
+      padding: 2rem 0.5rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.775rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .unscheduled-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.45rem 0.6rem;
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      cursor: grab;
+      transition: var(--transition-fast);
+      gap: 0.4rem;
+    }
+    .unscheduled-card:hover {
+      border-color: var(--border-medium);
+      background: var(--bg-surface-hover);
+    }
+    .unscheduled-card:active { cursor: grabbing; }
+
+    .card-left {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex: 1;
+      overflow: hidden;
+    }
+    .card-meta {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .card-title {
+      font-size: 0.75rem;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-sub {
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      text-transform: capitalize;
+    }
+    .date-picker-inline {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      padding: 0.15rem 0.25rem;
+      font-size: 0.65rem;
+      color: var(--text-main);
+      outline: none;
+      width: 95px;
+    }
+
+    /* Day Detail Modal Card */
+    .day-detail-card {
+      width: 100%;
+      max-width: 550px;
+    }
+    .day-summary-body {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding: 0.5rem 0;
+    }
+    .summary-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .section-title {
+      font-size: 0.775rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .none-text {
+      font-size: 0.725rem;
+      color: var(--text-muted);
+      font-style: italic;
+      padding-left: 0.5rem;
+    }
+    .task-mini-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .task-mini-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.65rem;
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      cursor: pointer;
+      font-size: 0.775rem;
+      transition: var(--transition-fast);
+    }
+    .task-mini-item:hover {
+      background: var(--bg-surface-hover);
+      border-color: var(--border-medium);
+    }
+    .task-title {
+      flex: 1;
+      color: var(--text-main);
+    }
+    .badge-done {
+      background: #f0fdf4;
+      color: var(--accent-emerald);
+      border-color: #bbf7d0;
+    }
+    .modal-footer-custom {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      padding-top: 1rem;
+      margin-top: 0.5rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+  `]
+})
+export class CalendarComponent implements OnInit {
+  currentDate = signal<Date>(new Date());
+  showCreated = signal<boolean>(true);
+  showClosed = signal<boolean>(true);
+  showDue = signal<boolean>(true);
+  showUnscheduledDrawer = signal<boolean>(false);
+
+  showCreateModal = signal<boolean>(false);
+  presetDueDate = signal<string>('');
+  activeDetailTask = signal<Task | null>(null);
+  selectedCell = signal<CalendarDayCell | null>(null);
+
+  draggedTaskId = signal<string | null>(null);
+  dragOverDate = signal<string | null>(null);
+
+  readonly maxVisibleEventsPerType = 2;
+
+  constructor(
+    public taskService: TaskService,
+    public projectService: ProjectService,
+    public workspaceService: WorkspaceService
+  ) {}
+
+  ngOnInit() {
+    this.taskService.loadTasksFromSupabase();
+  }
+
+  monthTitle = computed(() => {
+    const d = this.currentDate();
+    return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
+  });
+
+  tasks = computed(() => this.taskService.tasks());
+
+  // Tasks that do NOT have a due_date set
+  unscheduledTasks = computed(() => {
+    return this.tasks().filter(t => !t.due_date);
+  });
+
+  // Generate Month Grid Days
+  calendarCells = computed<CalendarDayCell[]>(() => {
+    const curr = this.currentDate();
+    const year = curr.getFullYear();
+    const month = curr.getMonth();
+
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // First day of current month
+    const firstDay = new Date(year, month, 1);
+    const startingDayOfWeek = firstDay.getDay(); // 0 = Sun, 1 = Mon ...
+
+    // Days in current month
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Days in previous month
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    const cells: CalendarDayCell[] = [];
+    const allTasksList = this.tasks();
+
+    // 1. Previous month padding days
+    for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+      const dayNum = daysInPrevMonth - i;
+      const prevDate = new Date(year, month - 1, dayNum);
+      const dateStr = this.formatToISO(prevDate);
+      cells.push(this.buildDayCell(dayNum, dateStr, false, dateStr === todayStr, allTasksList));
+    }
+
+    // 2. Current month days
+    for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
+      const curDate = new Date(year, month, dayNum);
+      const dateStr = this.formatToISO(curDate);
+      cells.push(this.buildDayCell(dayNum, dateStr, true, dateStr === todayStr, allTasksList));
+    }
+
+    // 3. Next month padding days to complete 35 or 42 cells grid
+    const totalSoFar = cells.length;
+    const totalGridCells = totalSoFar > 35 ? 42 : 35;
+    const remaining = totalGridCells - totalSoFar;
+
+    for (let dayNum = 1; dayNum <= remaining; dayNum++) {
+      const nextDate = new Date(year, month + 1, dayNum);
+      const dateStr = this.formatToISO(nextDate);
+      cells.push(this.buildDayCell(dayNum, dateStr, false, dateStr === todayStr, allTasksList));
+    }
+
+    return cells;
+  });
+
+  // Aggregated Month Counts for Filter Badges
+  monthCreatedCount = computed(() => {
+    return this.calendarCells()
+      .filter(c => c.isCurrentMonth)
+      .reduce((sum, c) => sum + c.createdTasks.length, 0);
+  });
+
+  monthClosedCount = computed(() => {
+    return this.calendarCells()
+      .filter(c => c.isCurrentMonth)
+      .reduce((sum, c) => sum + c.closedTasks.length, 0);
+  });
+
+  monthDueCount = computed(() => {
+    return this.calendarCells()
+      .filter(c => c.isCurrentMonth)
+      .reduce((sum, c) => sum + c.dueTasks.length, 0);
+  });
+
+  private buildDayCell(dayNumber: number, dateStr: string, isCurrentMonth: boolean, isToday: boolean, allTasks: Task[]): CalendarDayCell {
+    const createdTasks = allTasks.filter(t => t.created_at && t.created_at.startsWith(dateStr));
+
+    const closedTasks = allTasks.filter(t => {
+      if (!t.completed && (t.status || '').toLowerCase() !== 'done') return false;
+      const closedDate = t.updated_at ? t.updated_at.split('T')[0] : (t.created_at ? t.created_at.split('T')[0] : '');
+      return closedDate === dateStr;
+    });
+
+    const dueTasks = allTasks.filter(t => t.due_date === dateStr);
+
+    return {
+      dayNumber,
+      dateStr,
+      isCurrentMonth,
+      isToday,
+      createdTasks,
+      closedTasks,
+      dueTasks
+    };
+  }
+
+  prevMonth() {
+    this.currentDate.update(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+  }
+
+  nextMonth() {
+    this.currentDate.update(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+  }
+
+  todayMonth() {
+    this.currentDate.set(new Date());
+  }
+
+  hasAnyEvents(cell: CalendarDayCell): boolean {
+    const created = this.showCreated() ? cell.createdTasks.length : 0;
+    const closed = this.showClosed() ? cell.closedTasks.length : 0;
+    const due = this.showDue() ? cell.dueTasks.length : 0;
+    return (created + closed + due) > 0;
+  }
+
+  getOverflowCount(cell: CalendarDayCell): number {
+    let visibleCount = 0;
+    let totalCount = 0;
+
+    if (this.showCreated()) {
+      totalCount += cell.createdTasks.length;
+      visibleCount += Math.min(cell.createdTasks.length, this.maxVisibleEventsPerType);
+    }
+    if (this.showClosed()) {
+      totalCount += cell.closedTasks.length;
+      visibleCount += Math.min(cell.closedTasks.length, this.maxVisibleEventsPerType);
+    }
+    if (this.showDue()) {
+      totalCount += cell.dueTasks.length;
+      visibleCount += Math.min(cell.dueTasks.length, this.maxVisibleEventsPerType);
+    }
+
+    return Math.max(0, totalCount - visibleCount);
+  }
+
+  // --- Drag and Drop Scheduling Methods ---
+
+  onDragStartTask(e: DragEvent, task: Task) {
+    this.draggedTaskId.set(task.id);
+    if (e.dataTransfer) {
+      e.dataTransfer.setData('text/plain', task.id);
+      e.dataTransfer.effectAllowed = 'move';
+    }
+  }
+
+  onDragOverDay(e: DragEvent, dateStr: string) {
+    e.preventDefault();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
+    if (this.dragOverDate() !== dateStr) {
+      this.dragOverDate.set(dateStr);
+    }
+  }
+
+  onDragLeaveDay(e: DragEvent, dateStr: string) {
+    if (this.dragOverDate() === dateStr) {
+      this.dragOverDate.set(null);
+    }
+  }
+
+  async onDropOnDay(e: DragEvent, dateStr: string) {
+    e.preventDefault();
+    this.dragOverDate.set(null);
+    const taskId = this.draggedTaskId() || (e.dataTransfer ? e.dataTransfer.getData('text/plain') : null);
+
+    if (taskId) {
+      await this.taskService.updateTask(taskId, { due_date: dateStr });
+      this.draggedTaskId.set(null);
+    }
+  }
+
+  async scheduleTaskDirect(taskId: string, targetDate: string) {
+    await this.taskService.updateTask(taskId, { due_date: targetDate });
+  }
+
+  selectDayCell(cell: CalendarDayCell) {
+    this.selectedCell.set(cell);
+  }
+
+  openDetail(t: Task) {
+    this.activeDetailTask.set(t);
+  }
+
+  openCreateModal() {
+    this.presetDueDate.set('');
+    this.showCreateModal.set(true);
+  }
+
+  createForDate(dateStr: string) {
+    this.selectedCell.set(null);
+    this.presetDueDate.set(dateStr);
+    this.showCreateModal.set(true);
+  }
+
+  getTypeIcon(type: string): string {
+    const t = (type || '').toLowerCase();
+    switch (t) {
+      case 'story': return 'fi fi-rr-book-alt text-cyan';
+      case 'bug': return 'fi fi-rr-bug text-rose';
+      case 'epic': return 'fi fi-rr-rocket-takeoff text-purple';
+      default: return 'fi fi-rr-check-circle text-emerald';
+    }
+  }
+
+  formatFullDate(dateStr: string): string {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    return dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  private formatToISO(d: Date): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+}

@@ -244,7 +244,7 @@ export class CommandPaletteComponent implements AfterViewInit {
       badge: 'TASK',
       icon: 'fi fi-rr-plus',
       action: () => {
-        this.workspaceService.setWorkspace('03 TASKS');
+        this.workspaceService.setWorkspace('04 TASKS');
         this.close();
       }
     });
@@ -272,7 +272,7 @@ export class CommandPaletteComponent implements AfterViewInit {
         badge: t.type,
         icon: t.type === 'bug' ? 'fi fi-rr-bug' : 'fi fi-rr-check-circle',
         action: () => {
-          this.workspaceService.setWorkspace('03 TASKS');
+          this.workspaceService.setWorkspace('04 TASKS');
           this.close();
         }
       });

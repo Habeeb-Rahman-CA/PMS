@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 
-export type WorkspaceSection = '01 TODAY' | '02 PROJECTS' | '03 TASKS' | '04 BACKLOG' | '05 ARCHIVE';
+export type WorkspaceSection = '01 TODAY' | '02 PROJECTS' | '03 BACKLOG' | '04 TASKS' | '05 CALENDAR' | '06 ARCHIVE';
 
 export interface WorkspaceItem {
   id: WorkspaceSection;
@@ -22,9 +22,10 @@ export class WorkspaceService {
   readonly workspaces: WorkspaceItem[] = [
     { id: '01 TODAY', key: '1', name: 'TODAY', code: '01', icon: 'fi fi-rr-sun', desc: 'Focus dashboard & metrics' },
     { id: '02 PROJECTS', key: '2', name: 'PROJECTS', code: '02', icon: 'fi fi-rr-folder', desc: 'Project overview & metrics' },
-    { id: '03 TASKS', key: '3', name: 'TASKS', code: '03', icon: 'fi fi-rr-check-square', desc: 'Kanban workflow board & issue tracker' },
-    { id: '04 BACKLOG', key: '4', name: 'BACKLOG', code: '04', icon: 'fi fi-rr-list-check', desc: 'Jira-style task backlog with comprehensive filters' },
-    { id: '05 ARCHIVE', key: '5', name: 'ARCHIVE', code: '05', icon: 'fi fi-rr-box-alt', desc: 'Completed task history & exports' }
+    { id: '03 BACKLOG', key: '3', name: 'BACKLOG', code: '03', icon: 'fi fi-rr-list-check', desc: 'Jira-style task backlog with comprehensive filters' },
+    { id: '04 TASKS', key: '4', name: 'BOARD', code: '04', icon: 'fi fi-rr-layout-fluid', desc: 'Kanban workflow board' },
+    { id: '05 CALENDAR', key: '5', name: 'CALENDAR', code: '05', icon: 'fi fi-rr-calendar', desc: 'Jira-style month calendar of created & closed tasks' },
+    { id: '06 ARCHIVE', key: '6', name: 'ARCHIVE', code: '06', icon: 'fi fi-rr-box-alt', desc: 'Completed task history & exports' }
   ];
 
   constructor() {
@@ -77,8 +78,8 @@ export class WorkspaceService {
 
       if (isInput) return;
 
-      // Numeric shortcuts 1-5 for switching workspace
-      if (['1', '2', '3', '4', '5'].includes(e.key)) {
+      // Numeric shortcuts 1-6 for switching workspace
+      if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
         const item = this.workspaces.find(w => w.key === e.key);
         if (item) {
           e.preventDefault();

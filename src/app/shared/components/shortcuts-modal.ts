@@ -22,20 +22,24 @@ import { WorkspaceService } from '../../core/services/workspace.service';
               <span class="key-badge">1</span>
             </div>
             <div class="shortcut-row">
-              <span class="row-label">02 PROJECTS Dashboard</span>
+              <span class="row-label">02 PROJECTS Overview</span>
               <span class="key-badge">2</span>
             </div>
             <div class="shortcut-row">
-              <span class="row-label">03 TASKS Kanban Board</span>
+              <span class="row-label">03 BACKLOG Task List & Filters</span>
               <span class="key-badge">3</span>
             </div>
             <div class="shortcut-row">
-              <span class="row-label">04 BACKLOG Jira Filter View</span>
+              <span class="row-label">04 BOARD Kanban View</span>
               <span class="key-badge">4</span>
             </div>
             <div class="shortcut-row">
-              <span class="row-label">05 ARCHIVE & Exports</span>
+              <span class="row-label">05 CALENDAR Task View</span>
               <span class="key-badge">5</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="row-label">06 ARCHIVE & Exports</span>
+              <span class="key-badge">6</span>
             </div>
           </div>
 
@@ -59,7 +63,7 @@ import { WorkspaceService } from '../../core/services/workspace.service';
         </div>
 
         <div class="modal-footer font-mono">
-          <span>Press any key number 1-5 to immediately change active workspace</span>
+          <span>Press any key number 1-6 to immediately change active workspace</span>
         </div>
       </div>
     </div>

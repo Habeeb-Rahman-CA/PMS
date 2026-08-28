@@ -16,7 +16,7 @@ import { Task, TaskPriority, TaskType, Workflow } from '../../core/models/projec
         <div class="modal-header">
           <h3>
             <i [class]="isEditMode ? 'fi fi-rr-edit' : 'fi fi-rr-plus-small'"></i>
-            <span>{{ isEditMode ? 'Edit Issue / Task' : 'Quick Create Task' }}</span>
+            <span>{{ isEditMode ? 'Edit Task' : 'Quick Create Task' }}</span>
           </h3>
           <button class="btn btn-ghost btn-sm" (click)="close.emit()">
             <i class="fi fi-rr-cross"></i>
@@ -141,7 +141,7 @@ import { Task, TaskPriority, TaskType, Workflow } from '../../core/models/projec
             </button>
             <button type="submit" class="btn btn-primary" [disabled]="!title.trim() || !projectId">
               <i class="fi fi-rr-check"></i>
-              <span>{{ isEditMode ? 'Save Changes' : 'Create Issue' }}</span>
+              <span>{{ isEditMode ? 'Save Changes' : 'Create Task' }}</span>
             </button>
           </div>
         </form>
@@ -184,6 +184,7 @@ export class TaskModalComponent implements OnInit {
   @Input() taskToEdit: Task | null = null;
   @Input() defaultProjectId: string = '';
   @Input() defaultStatus: string = '';
+  @Input() defaultDueDate: string = '';
   @Output() close = new EventEmitter<Task | undefined>();
 
   title = '';
@@ -220,6 +221,7 @@ export class TaskModalComponent implements OnInit {
     } else {
       if (this.defaultProjectId) this.projectId = this.defaultProjectId;
       if (this.defaultStatus) this.status = this.defaultStatus;
+      if (this.defaultDueDate) this.dueDate = this.defaultDueDate;
     }
   }
 
@@ -274,4 +276,3 @@ export class TaskModalComponent implements OnInit {
     this.close.emit(resTask);
   }
 }
-
