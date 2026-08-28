@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { WorkspaceService } from './core/services/workspace.service';
+import { WorkspaceService, WorkspaceSection } from './core/services/workspace.service';
 import { TodayComponent } from './features/today/today';
 import { ProjectsComponent } from './features/projects/projects';
 import { TasksComponent } from './features/tasks/tasks';
@@ -31,10 +31,16 @@ import { TaskModalComponent } from './shared/components/task-modal';
 })
 export class App {
   sidebarCollapsed = signal<boolean>(false);
+  mobileMenuOpen = signal<boolean>(false);
 
   constructor(public workspaceService: WorkspaceService) {}
 
   toggleSidebar() {
     this.sidebarCollapsed.update(v => !v);
+  }
+
+  selectWorkspace(wsId: WorkspaceSection) {
+    this.workspaceService.setWorkspace(wsId);
+    this.mobileMenuOpen.set(false);
   }
 }

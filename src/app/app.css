@@ -14,16 +14,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 1.25rem;
+  padding: 0.5rem 1rem;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border-subtle);
   border-radius: var(--radius-none);
-  z-index: 100;
-  gap: 1rem;
+  z-index: 1000;
+  gap: 0.75rem;
   width: 100%;
 }
 
-/* Header Left: System Name */
+/* Header Left: System Name & Mobile Hamburger Toggle */
 .header-brand {
   display: flex;
   align-items: center;
@@ -31,17 +31,24 @@
   font-weight: 700;
   letter-spacing: -0.02em;
   font-size: 0.95rem;
-  min-width: 140px;
 }
 
 .brand-title {
   color: var(--text-main);
+  font-size: 0.95rem;
+}
+
+.mobile-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.45rem;
 }
 
 /* Header Center: Command Palette Search Bar */
 .header-center {
   flex: 1;
-  max-width: 560px;
+  max-width: 540px;
   display: flex;
   justify-content: center;
 }
@@ -70,13 +77,16 @@
 
 .search-icon {
   font-size: 0.85rem;
-  margin-right: 0.5rem;
+  margin-right: 0.4rem;
   color: var(--text-muted);
 }
 
 .search-placeholder {
   flex: 1;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Header Right: Help Icon */
@@ -84,7 +94,6 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  min-width: 140px;
 }
 
 .help-btn {
@@ -109,7 +118,17 @@
   overflow: hidden;
 }
 
-/* Left Sidebar Workspace Navigation - FIXED POSITION & INDEPENDENT SCROLL */
+/* Mobile Sidebar Backdrop Overlay */
+.mobile-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(28, 25, 23, 0.5);
+  backdrop-filter: blur(2px);
+  z-index: 990;
+  animation: fadeIn 0.15s ease-out;
+}
+
+/* Left Sidebar Workspace Navigation */
 .app-sidebar {
   width: 220px;
   min-width: 220px;
@@ -125,7 +144,7 @@
   transition: width 0.2s ease, min-width 0.2s ease, padding 0.2s ease;
 }
 
-/* Collapsed Sidebar State */
+/* Collapsed Sidebar State (Desktop) */
 .app-sidebar.collapsed {
   width: 58px;
   min-width: 58px;
@@ -185,7 +204,7 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 0.55rem 0.75rem;
+  padding: 0.6rem 0.75rem;
   background: var(--bg-surface-subtle);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xs);
@@ -196,6 +215,7 @@
   cursor: pointer;
   transition: var(--transition-fast);
   user-select: none;
+  min-height: 38px;
 }
 
 .app-sidebar.collapsed .sidebar-tab-btn {
@@ -259,6 +279,7 @@
   min-width: 0;
   height: 100%;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -302,26 +323,78 @@
   font-weight: 700;
 }
 
+.desktop-only {
+  display: inline-flex;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ==========================================================================
+   Responsive & Mobile PWA Rules (< 768px & < 480px)
+   ========================================================================== */
 @media (max-width: 768px) {
-  .app-shell {
-    height: auto;
-    max-height: none;
-    overflow: auto;
+  .desktop-only {
+    display: none !important;
   }
-  .app-body {
-    flex-direction: column;
-    overflow: visible;
+
+  .mobile-menu-toggle {
+    display: inline-flex;
   }
+
+  .header-brand {
+    min-width: auto;
+  }
+
+  .header-center {
+    max-width: 100%;
+  }
+
+  .cmd-search-bar {
+    padding: 0.35rem 0.5rem;
+  }
+
+  /* Slide-out Mobile Navigation Drawer */
   .app-sidebar {
-    width: 100% !important;
-    min-width: 100% !important;
-    height: auto;
-    border-right: none;
-    border-bottom: 1px solid var(--border-subtle);
+    position: fixed;
+    top: 48px;
+    left: 0;
+    bottom: 0;
+    z-index: 995;
+    width: 250px !important;
+    min-width: 250px !important;
+    transform: translateX(-100%);
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: none;
+    border-right: 1px solid var(--border-medium);
   }
-  .app-main {
+
+  .app-sidebar.mobile-open {
+    transform: translateX(0);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.18);
+  }
+}
+
+@media (max-width: 480px) {
+  .app-header {
+    padding: 0.4rem 0.65rem;
+  }
+
+  .brand-title {
+    font-size: 0.85rem;
+  }
+
+  .view-header-strip {
+    padding: 0.65rem 0.75rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .view-header-left, .view-header-right {
     width: 100%;
-    height: auto;
-    overflow-y: visible;
+    justify-content: space-between;
   }
 }

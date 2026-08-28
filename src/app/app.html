@@ -1,8 +1,15 @@
 <div class="app-shell">
   <!-- Top Bar Header: System Name (Left), Command Palette Search (Middle), Help Icon (Right) -->
   <header class="app-header paper-panel">
-    <!-- Left End: System Name -->
+    <!-- Left End: System Name & Mobile Menu Toggle -->
     <div class="header-brand font-mono">
+      <button
+        class="mobile-menu-toggle btn btn-ghost btn-xs"
+        (click)="mobileMenuOpen.set(!mobileMenuOpen())"
+        title="Toggle Menu"
+      >
+        <i [class]="mobileMenuOpen() ? 'fi fi-rr-cross' : 'fi fi-rr-menu-burger'"></i>
+      </button>
       <span class="status-dot dot-emerald" title="Workspace Active"></span>
       <span class="brand-title">DEVFLOW</span>
     </div>
@@ -16,7 +23,7 @@
       >
         <i class="fi fi-rr-search search-icon"></i>
         <span class="search-placeholder">Search workspace, tasks, projects...</span>
-        <span class="key-badge">⌘K</span>
+        <span class="key-badge desktop-only">⌘K</span>
       </button>
     </div>
 
@@ -32,16 +39,25 @@
     </div>
   </header>
 
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  @if (mobileMenuOpen()) {
+    <div class="mobile-sidebar-backdrop" (click)="mobileMenuOpen.set(false)"></div>
+  }
+
   <!-- App Body Layout: Left Sidebar + Main Workspace View -->
   <div class="app-body">
     <!-- Left Sidebar: Collapsible Workspace Navigation -->
-    <aside class="app-sidebar paper-panel font-mono" [class.collapsed]="sidebarCollapsed()">
+    <aside
+      class="app-sidebar paper-panel font-mono"
+      [class.collapsed]="sidebarCollapsed()"
+      [class.mobile-open]="mobileMenuOpen()"
+    >
       <div class="sidebar-header">
-        @if (!sidebarCollapsed()) {
-          <span class="sidebar-label">WORKSPACE</span>
+        @if (!sidebarCollapsed() || mobileMenuOpen()) {
+          <span class="sidebar-label">WORKSPACE NAV</span>
         }
         <button
-          class="collapse-toggle-btn"
+          class="collapse-toggle-btn desktop-only"
           (click)="toggleSidebar()"
           [title]="sidebarCollapsed() ? 'Expand Sidebar' : 'Collapse Sidebar'"
         >
@@ -54,17 +70,17 @@
           <button
             class="sidebar-tab-btn"
             [class.active]="workspaceService.activeWorkspace() === ws.id"
-            (click)="workspaceService.setWorkspace(ws.id)"
+            (click)="selectWorkspace(ws.id)"
             [title]="ws.code + ' ' + ws.name + ' [' + ws.key + ']'"
           >
             <div class="tab-left">
               <i [class]="ws.icon"></i>
-              @if (!sidebarCollapsed()) {
+              @if (!sidebarCollapsed() || mobileMenuOpen()) {
                 <span class="ws-code">{{ ws.code }}</span>
                 <span class="ws-name">{{ ws.name }}</span>
               }
             </div>
-            @if (!sidebarCollapsed()) {
+            @if (!sidebarCollapsed() || mobileMenuOpen()) {
               <span class="key-badge">{{ ws.key }}</span>
             }
           </button>
@@ -104,7 +120,7 @@
   <footer class="app-footer paper-panel font-mono">
     <div class="footer-left">
       <span class="status-dot dot-emerald"></span>
-      <span>ACTIVE WORKSPACE: {{ workspaceService.activeWorkspace() }}</span>
+      <span>ACTIVE: {{ workspaceService.activeWorkspace() }}</span>
     </div>
 
     <div class="footer-right font-mono">
