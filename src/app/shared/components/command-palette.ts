@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { WorkspaceService } from '../../core/services/workspace.service';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
-import { Task, Project } from '../../core/models/project.model';
 
 interface PaletteItem {
   id: string;
@@ -31,14 +30,15 @@ interface PaletteItem {
             type="text"
             class="palette-input font-mono"
             placeholder="Type a command, task, project, or workspace..."
-            [(ngModel)]="searchQuery"
+            [ngModel]="searchQuery()"
+            (ngModelChange)="onSearchInput($event)"
             (keydown)="onKeydown($event)"
           />
           <span class="key-badge">ESC</span>
         </div>
 
-        <!-- Results List -->
-        <div class="palette-body">
+        <!-- Results List Container -->
+        <div #paletteBody class="palette-body">
           @if (filteredItems().length === 0) {
             <div class="empty-results font-mono">
               <span>No matching commands found for "{{ searchQuery() }}"</span>
@@ -76,7 +76,7 @@ interface PaletteItem {
           <div class="footer-hint">
             <span class="key-badge">↑</span> <span class="key-badge">↓</span> Navigate
             <span class="key-badge">↵</span> Select
-            <span class="key-badge">1-4</span> Quick Jump
+            <span class="key-badge">1-6</span> Quick Jump
           </div>
           <span class="text-subtle">DEVFLOW CMD PALETTE</span>
         </div>
@@ -123,6 +123,7 @@ interface PaletteItem {
       max-height: 380px;
       overflow-y: auto;
       padding: 0.4rem;
+      scroll-behavior: smooth;
     }
     .empty-results {
       padding: 2rem 1rem;
@@ -196,6 +197,7 @@ interface PaletteItem {
 })
 export class CommandPaletteComponent implements AfterViewInit {
   @ViewChild('searchInput') searchInput!: ElementRef<HTMLInputElement>;
+  @ViewChild('paletteBody') paletteBody!: ElementRef<HTMLDivElement>;
 
   searchQuery = signal<string>('');
   selectedIndex = signal<number>(0);
@@ -244,7 +246,7 @@ export class CommandPaletteComponent implements AfterViewInit {
       badge: 'TASK',
       icon: 'fi fi-rr-plus',
       action: () => {
-        this.workspaceService.setWorkspace('04 TASKS');
+        this.workspaceService.openCreateTaskModal();
         this.close();
       }
     });
@@ -308,6 +310,12 @@ export class CommandPaletteComponent implements AfterViewInit {
     );
   });
 
+  onSearchInput(value: string) {
+    this.searchQuery.set(value);
+    this.selectedIndex.set(0);
+    this.scrollToSelected();
+  }
+
   onKeydown(e: KeyboardEvent) {
     const total = this.filteredItems().length;
     if (total === 0) return;
@@ -315,9 +323,11 @@ export class CommandPaletteComponent implements AfterViewInit {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       this.selectedIndex.update(i => (i + 1) % total);
+      this.scrollToSelected();
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       this.selectedIndex.update(i => (i - 1 + total) % total);
+      this.scrollToSelected();
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const current = this.filteredItems()[this.selectedIndex()];
@@ -325,6 +335,16 @@ export class CommandPaletteComponent implements AfterViewInit {
         this.execute(current);
       }
     }
+  }
+
+  private scrollToSelected() {
+    setTimeout(() => {
+      if (!this.paletteBody?.nativeElement) return;
+      const selectedEl = this.paletteBody.nativeElement.querySelector('.palette-item.selected') as HTMLElement;
+      if (selectedEl) {
+        selectedEl.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }, 0);
   }
 
   execute(item: PaletteItem) {
