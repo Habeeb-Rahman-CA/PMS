@@ -5,131 +5,253 @@
   background-color: var(--bg-canvas);
 }
 
-/* Header Bar */
+/* Top Bar Header */
 .app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 1.25rem;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border-subtle);
   border-radius: var(--radius-none);
   position: sticky;
   top: 0;
   z-index: 100;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
+/* Header Left: System Name */
 .header-brand {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.55rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   font-size: 0.95rem;
+  min-width: 140px;
 }
 
 .brand-title {
   color: var(--text-main);
 }
 
-/* Workspace Navigation Strip */
-.workspace-nav {
+/* Header Center: Command Palette Search Bar */
+.header-center {
+  flex: 1;
+  max-width: 480px;
   display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  overflow-x: auto;
+  justify-content: center;
 }
 
-.nav-label {
-  font-size: 0.675rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.workspace-tabs {
+.cmd-search-bar {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-}
-
-.ws-tab-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.3rem 0.6rem;
+  justify-content: space-between;
+  padding: 0.35rem 0.75rem;
   background: var(--bg-surface-subtle);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xs);
   color: var(--text-muted);
-  font-size: 0.75rem;
-  font-family: var(--font-mono);
-  font-weight: 500;
+  font-size: 0.775rem;
   cursor: pointer;
   transition: var(--transition-fast);
-  user-select: none;
-  white-space: nowrap;
+  outline: none;
 }
 
-.ws-tab-btn:hover {
+.cmd-search-bar:hover {
+  background: var(--bg-surface-hover);
+  border-color: var(--border-medium);
+  color: var(--text-main);
+}
+
+.search-icon {
+  font-size: 0.85rem;
+  margin-right: 0.5rem;
+  color: var(--text-muted);
+}
+
+.search-placeholder {
+  flex: 1;
+  text-align: left;
+}
+
+/* Header Right: Help Icon */
+.header-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 140px;
+}
+
+.help-btn {
+  padding: 0.35rem 0.6rem;
+  font-size: 1rem;
+  color: var(--text-muted);
+  border-radius: var(--radius-xs);
+}
+
+.help-btn:hover {
+  color: var(--text-main);
+  background: var(--bg-surface-hover);
+}
+
+/* App Body: Sidebar + Main Workspace */
+.app-body {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  position: relative;
+}
+
+/* Left Sidebar Workspace Navigation */
+.app-sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-subtle);
+  border-radius: var(--radius-none);
+  display: flex;
+  flex-direction: column;
+  padding: 0.85rem 0.65rem;
+  transition: width 0.2s ease, min-width 0.2s ease, padding 0.2s ease;
+}
+
+/* Collapsed Sidebar State */
+.app-sidebar.collapsed {
+  width: 58px;
+  min-width: 58px;
+  padding: 0.85rem 0.35rem;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0.35rem 0.65rem 0.35rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.app-sidebar.collapsed .sidebar-header {
+  justify-content: center;
+}
+
+.sidebar-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.collapse-toggle-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast);
+}
+
+.collapse-toggle-btn:hover {
   background: var(--bg-surface-hover);
   color: var(--text-main);
   border-color: var(--border-medium);
 }
 
-.ws-tab-btn.active {
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  flex: 1;
+}
+
+.sidebar-tab-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  background: var(--bg-surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  color: var(--text-muted);
+  font-size: 0.775rem;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  user-select: none;
+}
+
+.app-sidebar.collapsed .sidebar-tab-btn {
+  justify-content: center;
+  padding: 0.55rem 0.35rem;
+}
+
+.sidebar-tab-btn:hover {
+  background: var(--bg-surface-hover);
+  color: var(--text-main);
+  border-color: var(--border-medium);
+}
+
+.sidebar-tab-btn.active {
   background: var(--text-main);
   color: var(--bg-canvas);
   border-color: var(--text-main);
   font-weight: 700;
 }
 
-.ws-tab-btn.active .ws-code {
+.sidebar-tab-btn.active i,
+.sidebar-tab-btn.active .ws-code {
   color: var(--bg-canvas);
-  opacity: 0.7;
+  opacity: 0.75;
 }
 
-.ws-tab-btn.active .key-badge {
+.sidebar-tab-btn.active .key-badge {
   background: rgba(255, 255, 255, 0.2);
   color: #ffffff;
   border-color: transparent;
 }
 
+.tab-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.app-sidebar.collapsed .tab-left {
+  justify-content: center;
+}
+
+.tab-left i {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.app-sidebar.collapsed .tab-left i {
+  font-size: 1rem;
+}
+
 .ws-code {
   color: var(--text-subtle);
   font-weight: 700;
+  font-size: 0.75rem;
 }
 
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.cmd-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.icon-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-/* Main Workspace View */
+/* Main Workspace Content Area */
 .app-main {
   flex: 1;
-  width: 100%;
   max-width: 1440px;
-  margin: 0 auto;
 }
 
-/* Paper Footer */
+/* Clean Paper Footer */
 .app-footer {
   display: flex;
   justify-content: space-between;
@@ -153,25 +275,29 @@
 .footer-right {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
 }
 
-.key-hint {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
+.builder-tag {
+  color: var(--text-muted);
+  font-size: 0.725rem;
+}
+
+.builder-tag strong {
+  color: var(--text-main);
+  font-weight: 700;
 }
 
 @media (max-width: 768px) {
-  .app-header {
+  .app-body {
     flex-direction: column;
-    align-items: flex-start;
   }
-  .workspace-nav {
-    width: 100%;
+  .app-sidebar {
+    width: 100% !important;
+    min-width: 100% !important;
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
   }
-  .header-actions {
+  .app-main {
     width: 100%;
-    justify-content: flex-end;
   }
 }

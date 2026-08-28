@@ -1,64 +1,86 @@
 <div class="app-shell">
-  <!-- Top Workspace Navigation Header Bar -->
+  <!-- Top Bar Header: System Name (Left), Command Palette Search (Middle), Help Icon (Right) -->
   <header class="app-header paper-panel">
+    <!-- Left End: System Name -->
     <div class="header-brand font-mono">
       <span class="status-dot dot-emerald" title="Workspace Active"></span>
       <span class="brand-title">DEVFLOW</span>
     </div>
 
-    <!-- Workspace Navigation Strip -->
-    <nav class="workspace-nav font-mono">
-      <span class="nav-label">WORKSPACE:</span>
-      <div class="workspace-tabs">
-        @for (ws of workspaceService.workspaces; track ws.id) {
-          <button
-            class="ws-tab-btn"
-            [class.active]="workspaceService.activeWorkspace() === ws.id"
-            (click)="workspaceService.setWorkspace(ws.id)"
-          >
-            <span class="ws-code">{{ ws.code }}</span>
-            <span class="ws-name">{{ ws.name }}</span>
-            <span class="key-badge">{{ ws.key }}</span>
-          </button>
-        }
-      </div>
-    </nav>
-
-    <!-- Header Right Quick Actions -->
-    <div class="header-actions font-mono">
-      <button class="btn btn-secondary btn-sm cmd-btn" (click)="workspaceService.toggleCommandPalette()" title="Command Palette (Cmd+K)">
-        <i class="fi fi-rr-search"></i>
-        <span>Find / Command</span>
+    <!-- Middle: Command Palette Search Bar -->
+    <div class="header-center">
+      <button class="cmd-search-bar font-mono" (click)="workspaceService.toggleCommandPalette()" title="Search or type a command (Cmd+K)">
+        <i class="fi fi-rr-search search-icon"></i>
+        <span class="search-placeholder">Search workspace, tasks, projects...</span>
         <span class="key-badge">⌘K</span>
       </button>
+    </div>
 
-      <button class="btn btn-ghost btn-sm icon-btn" (click)="workspaceService.toggleShortcutsModal()" title="Keyboard Shortcuts Guide (?)">
-        <i class="fi fi-rr-keyboard"></i>
-        <span class="key-badge">?</span>
+    <!-- Right End: Help Icon -->
+    <div class="header-right font-mono">
+      <button class="btn btn-ghost btn-sm help-btn" (click)="workspaceService.toggleShortcutsModal()" title="Keyboard Shortcuts & Help (?)">
+        <i class="fi fi-rr-interrogation help-icon"></i>
       </button>
     </div>
   </header>
 
-  <!-- Main Active Workspace View Slot -->
-  <main class="app-main">
-    @switch (workspaceService.activeWorkspace()) {
-      @case ('01 TODAY') {
-        <app-today />
+  <!-- App Body Layout: Left Sidebar + Main Workspace View -->
+  <div class="app-body">
+    <!-- Left Sidebar: Collapsible Workspace Navigation -->
+    <aside class="app-sidebar paper-panel font-mono" [class.collapsed]="sidebarCollapsed()">
+      <div class="sidebar-header">
+        @if (!sidebarCollapsed()) {
+          <span class="sidebar-label">WORKSPACE</span>
+        }
+        <button class="collapse-toggle-btn" (click)="toggleSidebar()" [title]="sidebarCollapsed() ? 'Expand Sidebar' : 'Collapse Sidebar'">
+          <i [class]="sidebarCollapsed() ? 'fi fi-rr-angle-small-right' : 'fi fi-rr-angle-small-left'"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        @for (ws of workspaceService.workspaces; track ws.id) {
+          <button
+            class="sidebar-tab-btn"
+            [class.active]="workspaceService.activeWorkspace() === ws.id"
+            (click)="workspaceService.setWorkspace(ws.id)"
+            [title]="ws.code + ' ' + ws.name + ' [' + ws.key + ']'"
+          >
+            <div class="tab-left">
+              <i [class]="ws.icon"></i>
+              @if (!sidebarCollapsed()) {
+                <span class="ws-code">{{ ws.code }}</span>
+                <span class="ws-name">{{ ws.name }}</span>
+              }
+            </div>
+            @if (!sidebarCollapsed()) {
+              <span class="key-badge">{{ ws.key }}</span>
+            }
+          </button>
+        }
+      </nav>
+    </aside>
+
+    <!-- Main Active Workspace View -->
+    <main class="app-main">
+      @switch (workspaceService.activeWorkspace()) {
+        @case ('01 TODAY') {
+          <app-today />
+        }
+        @case ('02 PROJECTS') {
+          <app-projects />
+        }
+        @case ('03 TASKS') {
+          <app-tasks />
+        }
+        @case ('04 ARCHIVE') {
+          <app-archive />
+        }
+        @default {
+          <app-today />
+        }
       }
-      @case ('02 PROJECTS') {
-        <app-projects />
-      }
-      @case ('03 TASKS') {
-        <app-tasks />
-      }
-      @case ('04 ARCHIVE') {
-        <app-archive />
-      }
-      @default {
-        <app-today />
-      }
-    }
-  </main>
+    </main>
+  </div>
 
   <!-- Clean Paper Footer -->
   <footer class="app-footer paper-panel font-mono">
@@ -67,10 +89,8 @@
       <span>ACTIVE WORKSPACE: {{ workspaceService.activeWorkspace() }}</span>
     </div>
 
-    <div class="footer-right">
-      <span class="key-hint"><span class="key-badge">1-4</span> Switch Workspace</span>
-      <span class="key-hint"><span class="key-badge">⌘K</span> Command Palette</span>
-      <span class="key-hint"><span class="key-badge">?</span> Shortcuts</span>
+    <div class="footer-right font-mono">
+      <span class="builder-tag">Built by <strong>BiletLab</strong></span>
     </div>
   </footer>
 

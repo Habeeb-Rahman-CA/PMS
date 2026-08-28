@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { WorkspaceService } from './core/services/workspace.service';
 import { TodayComponent } from './features/today/today';
@@ -24,7 +24,11 @@ import { ShortcutsModalComponent } from './shared/components/shortcuts-modal';
   styleUrl: './app.css'
 })
 export class App {
+  sidebarCollapsed = signal<boolean>(false);
+
   constructor(public workspaceService: WorkspaceService) {}
 
-  currentTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  toggleSidebar() {
+    this.sidebarCollapsed.update(v => !v);
+  }
 }
