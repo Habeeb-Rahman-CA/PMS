@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="public/bilo-icon.svg" width="120" height="120" alt="bilo Logo">
+  <img src="public/bilo-icon.svg" width="120" height="120" alt="Bilo Logo">
 </p>
 
-<h1 align="center">bilo</h1>
+<h1 align="center">Bilo</h1>
 
 <p align="center">
   <strong>Minimalist Project Manager & Focus Workspace</strong>
@@ -16,15 +16,15 @@
 
 ---
 
-## Welcome to bilo
+## Welcome to Bilo
 
-**bilo** is your sleek, distraction-free workspace for managing personal projects, tracking tasks, and staying focused on what to work on next. Designed to eliminate clutter, bilo gives you total clarity over your tasks without unnecessary steps or complicated setups.
+**Bilo** is your sleek, distraction-free workspace for managing personal projects, tracking tasks, and staying focused on what to work on next. Designed to eliminate clutter, Bilo gives you total clarity over your tasks without unnecessary steps or complicated setups.
 
 ---
 
-## 🌟 Key Workspaces
+## Key Workspaces
 
-bilo is organized into dedicated workspaces to keep your workflow clear and structured:
+Bilo is organized into dedicated workspaces to keep your workflow clear and structured:
 
 | Workspace | Description |
 | :--- | :--- |
@@ -37,7 +37,7 @@ bilo is organized into dedicated workspaces to keep your workflow clear and stru
 
 ---
 
-## ⚡ User Guide & Quick Tips
+## User Guide & Quick Tips
 
 ### 1. Creating & Managing Tasks
 - Click the **+ New Task** button anywhere in the application to log a new task.
@@ -58,9 +58,9 @@ bilo is organized into dedicated workspaces to keep your workflow clear and stru
 
 ---
 
-## ⌨️ Shortcuts & Command Palette
+## Shortcuts & Command Palette
 
-bilo is designed for fast navigation without leaving your keyboard:
+Bilo is designed for fast navigation without leaving your keyboard:
 
 - **`Ctrl + K`** or **`Cmd + K`**: Open the **Command Palette** to search any task, switch workspaces, or run commands instantly.
 - **`?`**: Press `?` anywhere to open the **Keyboard Shortcuts** guide modal.
@@ -68,13 +68,13 @@ bilo is designed for fast navigation without leaving your keyboard:
 
 ---
 
-## 📱 Use bilo Anywhere (Offline & Mobile)
+## Use Bilo Anywhere (Offline & Mobile)
 
-- **Offline Capable**: bilo automatically saves your work locally when offline and synchronizes your changes when your connection returns.
-- **Installable PWA**: Click *Install App* in your web browser to install bilo as a native desktop or mobile application.
+- **Offline Capable**: Bilo automatically saves your work locally when offline and synchronizes your changes when your connection returns.
+- **Installable PWA**: Click *Install App* in your web browser to install Bilo as a native desktop or mobile application.
 
 ---
 
-## 📄 License
+## License
 
-bilo is open-source software licensed under the [MIT License](LICENSE).
+Bilo is open-source software licensed under the [MIT License](LICENSE).
