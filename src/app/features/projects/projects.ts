@@ -41,6 +41,10 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
             />
           </div>
 
+          <button class="btn btn-secondary btn-sm" (click)="openGlobalWorkflowModal()" title="Configure global status workflows">
+            <i class="fi fi-rr-settings-sliders text-cyan"></i> Workflow Config
+          </button>
+
           <button class="btn btn-primary btn-sm" (click)="openCreateProjectModal()">
             <i class="fi fi-rr-folder-add"></i> Create Project
           </button>
@@ -152,14 +156,6 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
               <div class="footer-left">
                 <button
                   class="btn btn-secondary btn-xs"
-                  (click)="openWorkflowModal(p)"
-                  title="Configure Status Columns & Workflow for this project"
-                >
-                  <i class="fi fi-rr-settings-sliders text-cyan"></i> Workflow
-                </button>
-
-                <button
-                  class="btn btn-secondary btn-xs"
                   (click)="openEditProjectModal(p)"
                   title="Edit Project Details"
                 >
@@ -199,9 +195,8 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
         ></app-project-modal>
       }
 
-      @if (workflowTargetProject(); as wfProj) {
+      @if (showWorkflowModal()) {
         <app-workflow-modal
-          [project]="wfProj"
           (close)="closeWorkflowModal()"
         ></app-workflow-modal>
       }
@@ -494,7 +489,7 @@ export class ProjectsComponent {
   searchQuery = signal<string>('');
   showProjectModal = signal<boolean>(false);
   editingProject = signal<Project | null>(null);
-  workflowTargetProject = signal<Project | null>(null);
+  showWorkflowModal = signal<boolean>(false);
 
   constructor(
     public projectService: ProjectService,
@@ -547,12 +542,12 @@ export class ProjectsComponent {
     this.editingProject.set(null);
   }
 
-  openWorkflowModal(p: Project) {
-    this.workflowTargetProject.set(p);
+  openGlobalWorkflowModal() {
+    this.showWorkflowModal.set(true);
   }
 
   closeWorkflowModal() {
-    this.workflowTargetProject.set(null);
+    this.showWorkflowModal.set(false);
   }
 
   openProjectBoard(projectId: string) {

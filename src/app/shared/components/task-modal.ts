@@ -1,24 +1,24 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
 import { WorkflowService } from '../../core/services/workflow.service';
 import { Task, TaskPriority, TaskType, Workflow } from '../../core/models/project.model';
+import { DatePickerComponent } from './date-picker';
+import { SelectComponent, SelectOption } from './select';
 
 @Component({
   selector: 'app-task-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DatePickerComponent, SelectComponent],
   template: `
     <div class="modal-overlay" (click)="close.emit()">
       <div class="modal-card paper-panel font-mono" (click)="$event.stopPropagation()">
         <!-- Header Strip -->
         <div class="modal-header">
           <div class="header-left">
-            <span class="badge-mono">{{ isEditMode ? 'EDIT TASK' : 'QUICK CREATE' }}</span>
             <h3>
-              <i [class]="isEditMode ? 'fi fi-rr-edit text-cyan' : 'fi fi-rr-plus-small text-cyan'"></i>
               <span>{{ isEditMode ? 'Edit Task Details' : 'Create New Task' }}</span>
             </h3>
           </div>
@@ -33,13 +33,13 @@ import { Task, TaskPriority, TaskType, Workflow } from '../../core/models/projec
             <div class="form-group">
               <label class="form-label">SUMMARY / TITLE <span class="text-rose">*</span></label>
               <input
+                #titleInput
                 type="text"
                 class="form-input"
                 [(ngModel)]="title"
                 name="title"
                 placeholder="e.g. Implement JWT Auth interceptor or Fix CSS grid layout"
                 required
-                autofocus
               />
             </div>
 
@@ -47,50 +47,34 @@ import { Task, TaskPriority, TaskType, Workflow } from '../../core/models/projec
             <div class="form-row">
               <div class="form-group half">
                 <label class="form-label">ISSUE TYPE</label>
-                <select class="form-select" [(ngModel)]="type" name="type">
-                  <option value="task">Task</option>
-                  <option value="bug">Bug</option>
-                  <option value="story">Story</option>
-                  <option value="epic">Epic</option>
-                </select>
+                <app-select [options]="typeOptions" [(value)]="type" placeholder="Select type..."></app-select>
               </div>
 
               <div class="form-group half">
                 <label class="form-label">PROJECT <span class="text-rose">*</span></label>
-                <select class="form-select" [(ngModel)]="projectId" name="projectId" required>
-                  <option value="" disabled>Select Project...</option>
-                  @for (p of projectService.projects(); track p.id) {
-                    <option [value]="p.id">{{ p.name }}</option>
-                  }
-                </select>
+                <app-select [options]="projectOptions" [(value)]="projectId" placeholder="Select project..."></app-select>
               </div>
             </div>
 
-            <!-- Status & Priority Row -->
-            <div class="form-row">
-              <div class="form-group half">
-                <label class="form-label">STATUS COLUMN</label>
-                <select class="form-select" [(ngModel)]="status" name="status">
-                  @if (getAvailableStatuses().length === 0) {
-                    <option value="">No status available</option>
-                  } @else {
-                    @for (col of getAvailableStatuses(); track col.id) {
-                      <option [value]="col.name">{{ col.name }}</option>
-                    }
-                  }
-                </select>
-              </div>
+            <!-- Priority & Status Row -->
+            @if (isEditMode) {
+              <div class="form-row">
+                <div class="form-group half">
+                  <label class="form-label">STATUS COLUMN</label>
+                  <app-select [options]="statusOptions" [(value)]="status" placeholder="Select status..."></app-select>
+                </div>
 
-              <div class="form-group half">
+                <div class="form-group half">
+                  <label class="form-label">PRIORITY</label>
+                  <app-select [options]="priorityOptions" [(value)]="priority" placeholder="Select priority..."></app-select>
+                </div>
+              </div>
+            } @else {
+              <div class="form-group">
                 <label class="form-label">PRIORITY</label>
-                <select class="form-select" [(ngModel)]="priority" name="priority">
-                  <option value="urgent">Urgent</option>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
+                <app-select [options]="priorityOptions" [(value)]="priority" placeholder="Select priority..."></app-select>
               </div>
-            </div>
+            }
 
             <!-- Assignee & Due Date Row -->
             <div class="form-row">
@@ -107,12 +91,11 @@ import { Task, TaskPriority, TaskType, Workflow } from '../../core/models/projec
 
               <div class="form-group half">
                 <label class="form-label">DUE DATE</label>
-                <input
-                  type="date"
-                  class="form-input"
-                  [(ngModel)]="dueDate"
-                  name="dueDate"
-                />
+                <app-date-picker
+                  [value]="dueDate"
+                  (valueChange)="dueDate = $event"
+                  placeholder="Select due date..."
+                ></app-date-picker>
               </div>
             </div>
 
@@ -273,12 +256,14 @@ import { Task, TaskPriority, TaskType, Workflow } from '../../core/models/projec
     }
   `]
 })
-export class TaskModalComponent implements OnInit {
+export class TaskModalComponent implements OnInit, AfterViewInit {
   @Input() taskToEdit: Task | null = null;
   @Input() defaultProjectId: string = '';
   @Input() defaultStatus: string = '';
   @Input() defaultDueDate: string = '';
   @Output() close = new EventEmitter<Task | undefined>();
+
+  @ViewChild('titleInput') titleInput!: ElementRef<HTMLInputElement>;
 
   title = '';
   description = '';
@@ -289,6 +274,36 @@ export class TaskModalComponent implements OnInit {
   assignee = 'Self';
   dueDate = '';
   labelsInput = '';
+
+  typeOptions: SelectOption[] = [
+    { value: 'task', label: 'Task', icon: 'fi fi-rr-check-box' },
+    { value: 'bug', label: 'Bug', icon: 'fi fi-rr-bug' },
+    { value: 'story', label: 'Story', icon: 'fi fi-rr-bookmark' },
+    { value: 'epic', label: 'Epic', icon: 'fi fi-rr-bolt' }
+  ];
+
+  priorityOptions: SelectOption[] = [
+    { value: 'urgent', label: 'Urgent' },
+    { value: 'high', label: 'High' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'low', label: 'Low' }
+  ];
+
+  get projectOptions(): SelectOption[] {
+    return this.projectService.projects().map(p => ({
+      value: p.id,
+      label: p.name,
+      icon: 'fi fi-rr-folder'
+    }));
+  }
+
+  get statusOptions(): SelectOption[] {
+    const statuses = this.getAvailableStatuses();
+    return statuses.map(s => ({
+      value: s.name,
+      label: s.name
+    }));
+  }
 
   get isEditMode(): boolean {
     return !!this.taskToEdit;
@@ -318,6 +333,14 @@ export class TaskModalComponent implements OnInit {
     }
   }
 
+  ngAfterViewInit() {
+    setTimeout(() => {
+      if (this.titleInput) {
+        this.titleInput.nativeElement.focus();
+      }
+    }, 50);
+  }
+
   getAvailableStatuses(): Workflow[] {
     return this.workflowService.getWorkflowsForProject(this.projectId);
   }
@@ -331,8 +354,10 @@ export class TaskModalComponent implements OnInit {
       .filter(l => l.length > 0);
 
     const available = this.getAvailableStatuses();
-    const finalStatus = this.status || (available.length > 0 ? available[0].name : '');
-    const activeWf = available.find(w => w.name === finalStatus);
+    const finalStatus = this.isEditMode
+      ? (this.status || (available.length > 0 ? available[0].name : 'todo'))
+      : (this.defaultStatus || (available.length > 0 ? available[0].name : 'todo'));
+    const activeWf = available.find(w => w.name === finalStatus) || (available.length > 0 ? available[0] : undefined);
 
     let resTask: Task | undefined = undefined;
 

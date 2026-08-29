@@ -14,91 +14,85 @@ import { Project, Workflow } from '../../core/models/project.model';
         <div class="modal-header">
           <h3>
             <i class="fi fi-rr-settings-sliders text-cyan"></i>
-            <span>Project Status Workflows</span>
+            <span>Global Workflow Configuration</span>
           </h3>
           <button class="btn btn-ghost btn-sm" (click)="close.emit()">
             <i class="fi fi-rr-cross"></i>
           </button>
         </div>
 
-        @if (project) {
-          <p class="modal-subtext">
-            Configure status workflow columns for <strong>{{ project.name }}</strong>. All columns save directly to your Supabase database.
-          </p>
+        <p class="modal-subtext">
+          Configure universal workflow status columns shared across all projects in Bilo. Changes sync directly with your database.
+        </p>
 
-          <div class="columns-list">
-            @if (columns.length === 0) {
-              <div class="empty-list">
-                <i class="fi fi-rr-info empty-icon"></i>
-                <p>No status workflow columns yet for this project. Add your first status column below!</p>
-              </div>
-            } @else {
-              @for (col of columns; track col.id; let i = $index) {
-                <div class="column-item">
-                  <span class="drag-handle"><i class="fi fi-rr-menu-dots-vertical"></i></span>
+        <div class="columns-list">
+          @if (columns.length === 0) {
+            <div class="empty-list">
+              <i class="fi fi-rr-info empty-icon"></i>
+              <p>No workflow status columns defined. Add your first status column below!</p>
+            </div>
+          } @else {
+            @for (col of columns; track col.id; let i = $index) {
+              <div class="column-item">
+                <span class="drag-handle"><i class="fi fi-rr-menu-dots-vertical"></i></span>
 
-                  <input
-                    type="color"
-                    class="color-picker-inline"
-                    [(ngModel)]="col.color"
-                  />
+                <input
+                  type="color"
+                  class="color-picker-inline"
+                  [(ngModel)]="col.color"
+                />
 
-                  <input
-                    type="text"
-                    class="form-input col-name-input"
-                    [(ngModel)]="col.name"
-                    placeholder="Status Column Name (e.g. Backlog, In Progress)"
-                  />
+                <input
+                  type="text"
+                  class="form-input col-name-input"
+                  [(ngModel)]="col.name"
+                  placeholder="Status Column Name (e.g. Backlog, In Progress)"
+                />
 
-                  <div class="col-actions">
-                    @if (i > 0) {
-                      <button type="button" class="btn btn-ghost btn-sm btn-icon" (click)="moveColumn(i, -1)">
-                        <i class="fi fi-rr-angle-up"></i>
-                      </button>
-                    }
-                    @if (i < columns.length - 1) {
-                      <button type="button" class="btn btn-ghost btn-sm btn-icon" (click)="moveColumn(i, 1)">
-                        <i class="fi fi-rr-angle-down"></i>
-                      </button>
-                    }
-                    <button type="button" class="btn btn-ghost btn-sm btn-icon btn-danger" (click)="removeColumn(col, i)">
-                      <i class="fi fi-rr-trash"></i>
+                <div class="col-actions">
+                  @if (i > 0) {
+                    <button type="button" class="btn btn-ghost btn-sm btn-icon" (click)="moveColumn(i, -1)">
+                      <i class="fi fi-rr-angle-up"></i>
                     </button>
-                  </div>
+                  }
+                  @if (i < columns.length - 1) {
+                    <button type="button" class="btn btn-ghost btn-sm btn-icon" (click)="moveColumn(i, 1)">
+                      <i class="fi fi-rr-angle-down"></i>
+                    </button>
+                  }
+                  <button type="button" class="btn btn-ghost btn-sm btn-icon btn-danger" (click)="removeColumn(col, i)">
+                    <i class="fi fi-rr-trash"></i>
+                  </button>
                 </div>
-              }
+              </div>
             }
-          </div>
+          }
+        </div>
 
-          <!-- Add Column Row -->
-          <div class="add-col-row">
-            <input
-              type="text"
-              class="form-input new-col-input"
-              placeholder="New status column name (e.g. Backlog, Review)..."
-              [(ngModel)]="newColumnName"
-              (keyup.enter)="addNewWorkflowColumn()"
-            />
-            <button type="button" class="btn btn-primary btn-sm" (click)="addNewWorkflowColumn()">
-              <i class="fi fi-rr-plus"></i> Add Status
+        <!-- Add Column Row -->
+        <div class="add-col-row">
+          <input
+            type="text"
+            class="form-input new-col-input"
+            placeholder="New status column name (e.g. In Review, QA)..."
+            [(ngModel)]="newColumnName"
+            (keyup.enter)="addNewWorkflowColumn()"
+          />
+          <button type="button" class="btn btn-primary btn-sm" (click)="addNewWorkflowColumn()">
+            <i class="fi fi-rr-plus"></i> Add Status
+          </button>
+        </div>
+
+        <div class="modal-footer">
+          <div class="right-buttons">
+            <button type="button" class="btn btn-secondary" (click)="close.emit()">
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary" (click)="saveWorkflowChanges()">
+              <i class="fi fi-rr-check"></i> Save Changes
             </button>
           </div>
-
-          <div class="modal-footer">
-            <div class="right-buttons">
-              <button type="button" class="btn btn-secondary" (click)="close.emit()">
-                Close
-              </button>
-              <button type="button" class="btn btn-primary" (click)="saveWorkflowChanges()">
-                <i class="fi fi-rr-check"></i> Save Changes
-              </button>
-            </div>
-          </div>
-        } @else {
-          <div class="empty-list">
-            <p>Please select a specific project to manage its status workflows.</p>
-          </div>
-        }
+        </div>
       </div>
     </div>
   `,
@@ -196,16 +190,14 @@ export class WorkflowModalComponent implements OnInit {
   constructor(private workflowService: WorkflowService) {}
 
   ngOnInit() {
-    if (this.project) {
-      const existing = this.workflowService.getWorkflowsForProject(this.project.id);
-      this.columns = JSON.parse(JSON.stringify(existing));
-    }
+    const existing = this.workflowService.globalWorkflows();
+    this.columns = JSON.parse(JSON.stringify(existing));
   }
 
   async addNewWorkflowColumn() {
-    if (!this.newColumnName.trim() || !this.project) return;
+    if (!this.newColumnName.trim()) return;
     const name = this.newColumnName.trim();
-    const created = await this.workflowService.createWorkflow(this.project.id, name);
+    const created = await this.workflowService.createWorkflow('global', name);
     this.columns.push(JSON.parse(JSON.stringify(created)));
     this.newColumnName = '';
   }
@@ -226,16 +218,11 @@ export class WorkflowModalComponent implements OnInit {
   }
 
   async saveWorkflowChanges() {
-    if (!this.project) return;
-
-    // Execute deletions
     for (const delId of this.deletedColumnIds) {
       await this.workflowService.deleteWorkflow(delId);
     }
 
-    // Save positions & field updates
-    await this.workflowService.updateWorkflowPositions(this.project.id, this.columns);
-
+    await this.workflowService.updateWorkflowPositions('global', this.columns);
     this.close.emit();
   }
 }

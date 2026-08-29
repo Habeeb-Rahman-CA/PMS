@@ -7,6 +7,7 @@ import { WorkspaceService } from '../../core/services/workspace.service';
 import { Task } from '../../core/models/project.model';
 import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
 import { TaskModalComponent } from '../../shared/components/task-modal';
+import { DatePickerComponent } from '../../shared/components/date-picker';
 
 export interface CalendarDayCell {
   dayNumber: number;
@@ -21,7 +22,7 @@ export interface CalendarDayCell {
 @Component({
   selector: 'app-calendar',
   standalone: true,
-  imports: [CommonModule, FormsModule, TaskDetailModalComponent, TaskModalComponent],
+  imports: [CommonModule, FormsModule, TaskDetailModalComponent, TaskModalComponent, DatePickerComponent],
   template: `
     <div class="calendar-workspace font-mono">
       <!-- Calendar Header Strip -->
@@ -216,22 +217,23 @@ export interface CalendarDayCell {
                     (dragstart)="onDragStartTask($event, t)"
                     (click)="openDetail(t)"
                   >
-                    <div class="card-left">
+                    <div class="card-top-row">
                       <i [class]="getTypeIcon(t.type)"></i>
-                      <div class="card-meta">
-                        <span class="card-title">{{ t.title }}</span>
-                        <span class="card-sub">{{ t.priority }} • {{ t.status }}</span>
-                      </div>
+                      <span class="card-title">{{ t.title }}</span>
                     </div>
 
-                    <div class="card-right" (click)="$event.stopPropagation()">
-                      <input
-                        type="date"
-                        class="date-picker-inline font-mono"
-                        [ngModel]="t.due_date"
-                        (ngModelChange)="scheduleTaskDirect(t.id, $event)"
-                        title="Set due date"
-                      />
+                    <div class="card-bottom-row">
+                      <span class="card-sub">{{ t.priority }} • {{ t.status }}</span>
+                      <div class="card-date-action" (click)="$event.stopPropagation()">
+                        <app-date-picker
+                          [value]="t.due_date || ''"
+                          [compact]="true"
+                          align="right"
+                          position="top"
+                          placeholder="Set date"
+                          (dateChange)="scheduleTaskDirect(t.id, $event)"
+                        ></app-date-picker>
+                      </div>
                     </div>
                   </div>
                 }
@@ -561,7 +563,7 @@ export interface CalendarDayCell {
 
     /* Unscheduled Drawer Panel */
     .unscheduled-drawer {
-      width: 270px;
+      width: 290px;
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
@@ -604,6 +606,8 @@ export interface CalendarDayCell {
       gap: 0.5rem;
       max-height: 520px;
       overflow-y: auto;
+      overflow-x: hidden;
+      padding: 2px;
     }
     .empty-drawer {
       padding: 2rem 0.5rem;
@@ -618,15 +622,17 @@ export interface CalendarDayCell {
 
     .unscheduled-card {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.45rem 0.6rem;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding: 0.55rem 0.65rem;
       background: var(--bg-surface-subtle);
       border: 1px solid var(--border-subtle);
       border-radius: var(--radius-xs);
       cursor: grab;
       transition: var(--transition-fast);
-      gap: 0.4rem;
+      position: relative;
+      overflow-x: hidden;
+      box-sizing: border-box;
     }
     .unscheduled-card:hover {
       border-color: var(--border-medium);
@@ -634,29 +640,39 @@ export interface CalendarDayCell {
     }
     .unscheduled-card:active { cursor: grabbing; }
 
-    .card-left {
+    .card-top-row {
       display: flex;
       align-items: center;
       gap: 0.45rem;
-      flex: 1;
-      overflow: hidden;
-    }
-    .card-meta {
-      display: flex;
-      flex-direction: column;
+      width: 100%;
       overflow: hidden;
     }
     .card-title {
-      font-size: 0.75rem;
+      font-size: 0.775rem;
+      font-weight: 600;
       color: var(--text-main);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      flex: 1;
+    }
+    .card-bottom-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
     }
     .card-sub {
       font-size: 0.625rem;
       color: var(--text-muted);
       text-transform: capitalize;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-date-action {
+      min-width: 90px;
     }
     .date-picker-inline {
       background: var(--bg-surface);

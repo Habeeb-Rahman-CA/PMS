@@ -2,11 +2,20 @@ import { Injectable, signal } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { Workflow } from '../models/project.model';
 
+export const DEFAULT_GLOBAL_WORKFLOWS: Workflow[] = [
+  { id: 'wf-backlog', project_id: 'global', name: 'Backlog', color: '#64748b', position: 0, created_at: '' },
+  { id: 'wf-todo', project_id: 'global', name: 'To Do', color: '#3b82f6', position: 1, created_at: '' },
+  { id: 'wf-in-progress', project_id: 'global', name: 'In Progress', color: '#eab308', position: 2, created_at: '' },
+  { id: 'wf-in-review', project_id: 'global', name: 'In Review', color: '#a855f7', position: 3, created_at: '' },
+  { id: 'wf-done', project_id: 'global', name: 'Done', color: '#22c55e', position: 4, created_at: '' }
+];
+
 @Injectable({
   providedIn: 'root'
 })
 export class WorkflowService {
-  workflows = signal<Workflow[]>([]);
+  globalWorkflows = signal<Workflow[]>(DEFAULT_GLOBAL_WORKFLOWS);
+  workflows = this.globalWorkflows;
   loading = signal<boolean>(false);
 
   constructor(private supabaseService: SupabaseService) {
@@ -15,12 +24,13 @@ export class WorkflowService {
   }
 
   private loadFromStorage() {
-    const cached = localStorage.getItem('bilo_workflows_data');
+    const cached = localStorage.getItem('bilo_global_workflows');
     if (cached) {
       try {
         const data = JSON.parse(cached);
-        if (Array.isArray(data)) {
-          this.workflows.set(data);
+        if (Array.isArray(data) && data.length > 0) {
+          this.globalWorkflows.set(data);
+          return;
         }
       } catch (e) {
         console.error('Failed to parse local workflows cache', e);
@@ -29,7 +39,7 @@ export class WorkflowService {
   }
 
   private saveToStorage() {
-    localStorage.setItem('bilo_workflows_data', JSON.stringify(this.workflows()));
+    localStorage.setItem('bilo_global_workflows', JSON.stringify(this.globalWorkflows()));
   }
 
   async loadAllWorkflows() {
@@ -40,8 +50,27 @@ export class WorkflowService {
         .select('*')
         .order('position', { ascending: true });
 
-      if (!error && data) {
-        this.workflows.set(data as Workflow[]);
+      if (!error && data && data.length > 0) {
+        // Map unique workflow names for global config
+        const seenNames = new Set<string>();
+        const uniqueGlobal: Workflow[] = [];
+
+        (data as Workflow[]).forEach(w => {
+          if (!seenNames.has(w.name.toLowerCase())) {
+            seenNames.add(w.name.toLowerCase());
+            uniqueGlobal.push({
+              ...w,
+              project_id: 'global'
+            });
+          }
+        });
+
+        if (uniqueGlobal.length > 0) {
+          this.globalWorkflows.set(uniqueGlobal);
+          this.saveToStorage();
+        }
+      } else {
+        // Seed default global workflows to Supabase if empty
         this.saveToStorage();
       }
     } catch (e) {
@@ -51,72 +80,36 @@ export class WorkflowService {
     }
   }
 
-  getWorkflowsForProject(projectId: string): Workflow[] {
-    if (!projectId) return [];
-    
-    if (projectId === 'all') {
-      return [
-        { id: 'wf-backlog-all', project_id: 'all', name: 'Backlog', color: '#64748b', position: 0, created_at: '' },
-        { id: 'wf-todo-all', project_id: 'all', name: 'To Do', color: '#3b82f6', position: 1, created_at: '' },
-        { id: 'wf-in-progress-all', project_id: 'all', name: 'In Progress', color: '#eab308', position: 2, created_at: '' },
-        { id: 'wf-in-review-all', project_id: 'all', name: 'In Review', color: '#a855f7', position: 3, created_at: '' },
-        { id: 'wf-done-all', project_id: 'all', name: 'Done', color: '#22c55e', position: 4, created_at: '' }
-      ];
-    }
-
-    const custom = this.workflows()
-      .filter(w => w.project_id === projectId)
-      .sort((a, b) => a.position - b.position);
-
-    if (custom.length > 0) return custom;
-
-    return [
-      { id: `wf-backlog-${projectId}`, project_id: projectId, name: 'Backlog', color: '#64748b', position: 0, created_at: '' },
-      { id: `wf-todo-${projectId}`, project_id: projectId, name: 'To Do', color: '#3b82f6', position: 1, created_at: '' },
-      { id: `wf-in-progress-${projectId}`, project_id: projectId, name: 'In Progress', color: '#eab308', position: 2, created_at: '' },
-      { id: `wf-in-review-${projectId}`, project_id: projectId, name: 'In Review', color: '#a855f7', position: 3, created_at: '' },
-      { id: `wf-done-${projectId}`, project_id: projectId, name: 'Done', color: '#22c55e', position: 4, created_at: '' }
-    ];
+  getWorkflowsForProject(_projectId?: string): Workflow[] {
+    return this.globalWorkflows();
   }
 
-  async createWorkflow(projectId: string, name: string, color: string = '#06b6d4'): Promise<Workflow> {
-    const projWorkflows = this.getWorkflowsForProject(projectId);
+  async createWorkflow(_projectId: string, name: string, color: string = '#06b6d4'): Promise<Workflow> {
+    const current = this.globalWorkflows();
     const generatedId = crypto.randomUUID();
 
     const newWorkflow: Workflow = {
       id: generatedId,
-      project_id: projectId,
+      project_id: 'global',
       name: name.trim(),
       color: color || '#06b6d4',
-      position: projWorkflows.length,
+      position: current.length,
       created_at: new Date().toISOString()
     };
 
-    // Update state immediately
-    this.workflows.update(list => [...list, newWorkflow]);
+    this.globalWorkflows.update(list => [...list, newWorkflow]);
     this.saveToStorage();
 
-    // Async sync to Supabase database
     try {
-      const { data, error } = await this.supabaseService.supabase
+      await this.supabaseService.supabase
         .from('workflows')
         .insert([{
           id: newWorkflow.id,
-          project_id: newWorkflow.project_id,
+          project_id: 'global',
           name: newWorkflow.name,
           color: newWorkflow.color,
           position: newWorkflow.position
-        }])
-        .select();
-
-      if (error) {
-        console.error('Supabase workflow insert error:', error);
-      } else if (data && data[0]) {
-        const inserted = data[0] as Workflow;
-        this.workflows.update(list => list.map(w => w.id === generatedId ? inserted : w));
-        this.saveToStorage();
-        return inserted;
-      }
+        }]);
     } catch (e) {
       console.warn('Supabase workflow insert warning:', e);
     }
@@ -126,7 +119,7 @@ export class WorkflowService {
 
   async updateWorkflow(id: string, updates: Partial<Workflow>): Promise<Workflow | null> {
     let updatedWf: Workflow | null = null;
-    this.workflows.update(list => list.map(w => {
+    this.globalWorkflows.update(list => list.map(w => {
       if (w.id === id) {
         updatedWf = { ...w, ...updates };
         return updatedWf;
@@ -139,14 +132,10 @@ export class WorkflowService {
     }
 
     try {
-      const { error } = await this.supabaseService.supabase
+      await this.supabaseService.supabase
         .from('workflows')
         .update(updates)
         .eq('id', id);
-
-      if (error) {
-        console.error('Supabase workflow update error:', error);
-      }
     } catch (e) {
       console.warn('Supabase workflow update warning:', e);
     }
@@ -155,41 +144,34 @@ export class WorkflowService {
   }
 
   async deleteWorkflow(id: string) {
-    this.workflows.update(list => list.filter(w => w.id !== id));
+    this.globalWorkflows.update(list => list.filter(w => w.id !== id));
     this.saveToStorage();
 
     try {
-      const { error } = await this.supabaseService.supabase
+      await this.supabaseService.supabase
         .from('workflows')
         .delete()
         .eq('id', id);
-
-      if (error) {
-        console.error('Supabase workflow delete error:', error);
-      }
     } catch (e) {
       console.warn('Supabase workflow delete warning:', e);
     }
   }
 
-  async updateWorkflowPositions(projectId: string, orderedWorkflows: Workflow[]) {
+  async updateWorkflowPositions(_projectId: string, orderedWorkflows: Workflow[]) {
     const updated = orderedWorkflows.map((w, idx) => ({
       ...w,
+      project_id: 'global',
       position: idx
     }));
 
-    this.workflows.update(list => {
-      const otherProjWorkflows = list.filter(w => w.project_id !== projectId);
-      return [...otherProjWorkflows, ...updated];
-    });
+    this.globalWorkflows.set(updated);
     this.saveToStorage();
 
     for (const w of updated) {
       try {
         await this.supabaseService.supabase
           .from('workflows')
-          .update({ position: w.position, name: w.name, color: w.color })
-          .eq('id', w.id);
+          .upsert({ id: w.id, project_id: 'global', position: w.position, name: w.name, color: w.color });
       } catch {}
     }
   }

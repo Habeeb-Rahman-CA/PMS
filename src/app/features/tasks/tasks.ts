@@ -11,6 +11,7 @@ import { Project, Task, Workflow } from '../../core/models/project.model';
 import { getTaskKey } from '../../core/utils/task-key.util';
 import { TaskModalComponent } from '../../shared/components/task-modal';
 import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
+import { SelectComponent, SelectOption } from '../../shared/components/select';
 
 @Component({
   selector: 'app-tasks',
@@ -20,7 +21,8 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
     FormsModule,
     DragDropModule,
     TaskModalComponent,
-    TaskDetailModalComponent
+    TaskDetailModalComponent,
+    SelectComponent
   ],
   template: `
     <div class="tasks-page-container">
@@ -48,80 +50,56 @@ import { TaskDetailModalComponent } from '../../shared/components/task-detail-mo
           <!-- Project Filter -->
           <div class="filter-group">
             <label class="filter-label">PROJECT</label>
-            <select
-              class="form-select filter-select"
-              [ngModel]="selectedProjectId()"
-              (ngModelChange)="onProjectChange($event)"
-            >
-              <option value="all">All Projects</option>
-              @for (p of projectService.projects(); track p.id) {
-                <option [value]="p.id">{{ p.name }}</option>
-              }
-            </select>
+            <app-select
+              [options]="projectFilterOptions()"
+              [value]="selectedProjectId()"
+              (valueChange)="onProjectChange($event)"
+              [compact]="true"
+            ></app-select>
           </div>
 
           <!-- Issue Type Filter -->
           <div class="filter-group">
             <label class="filter-label">TYPE</label>
-            <select
-              class="form-select filter-select"
-              [ngModel]="selectedType()"
-              (ngModelChange)="selectedType.set($event)"
-            >
-              <option value="all">All Types</option>
-              <option value="story">Story</option>
-              <option value="bug">Bug</option>
-              <option value="task">Task</option>
-              <option value="epic">Epic</option>
-            </select>
+            <app-select
+              [options]="typeFilterOptions"
+              [value]="selectedType()"
+              (valueChange)="selectedType.set($event)"
+              [compact]="true"
+            ></app-select>
           </div>
 
           <!-- Priority Filter -->
           <div class="filter-group">
             <label class="filter-label">PRIORITY</label>
-            <select
-              class="form-select filter-select"
-              [ngModel]="selectedPriority()"
-              (ngModelChange)="selectedPriority.set($event)"
-            >
-              <option value="all">All Priorities</option>
-              <option value="urgent">Urgent</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
+            <app-select
+              [options]="priorityFilterOptions"
+              [value]="selectedPriority()"
+              (valueChange)="selectedPriority.set($event)"
+              [compact]="true"
+            ></app-select>
           </div>
 
           <!-- Label Filter -->
           <div class="filter-group">
             <label class="filter-label">LABEL</label>
-            <select
-              class="form-select filter-select"
-              [ngModel]="selectedLabel()"
-              (ngModelChange)="selectedLabel.set($event)"
-            >
-              <option value="all">All Labels</option>
-              @for (lbl of availableLabels(); track lbl) {
-                <option [value]="lbl">#{{ lbl }}</option>
-              }
-            </select>
+            <app-select
+              [options]="labelFilterOptions()"
+              [value]="selectedLabel()"
+              (valueChange)="selectedLabel.set($event)"
+              [compact]="true"
+            ></app-select>
           </div>
 
           <!-- Due Date Filter -->
           <div class="filter-group">
             <label class="filter-label">DUE DATE</label>
-            <select
-              class="form-select filter-select"
-              [ngModel]="selectedDueDateFilter()"
-              (ngModelChange)="selectedDueDateFilter.set($event)"
-            >
-              <option value="all">All Dates</option>
-              <option value="overdue">Overdue</option>
-              <option value="today">Due Today</option>
-              <option value="week">Due This Week</option>
-              <option value="has_date">Has Due Date</option>
-              <option value="no_date">No Due Date</option>
-            </select>
+            <app-select
+              [options]="dueDateFilterOptions"
+              [value]="selectedDueDateFilter()"
+              (valueChange)="selectedDueDateFilter.set($event)"
+              [compact]="true"
+            ></app-select>
           </div>
 
           @if (hasActiveFilters()) {
@@ -544,6 +522,48 @@ export class TasksComponent {
   selectedDueDateFilter = signal<string>('all');
   searchQuery = signal<string>('');
 
+  projectFilterOptions = computed<SelectOption[]>(() => [
+    { value: 'all', label: 'All Projects', icon: 'fi fi-rr-apps' },
+    ...this.projectService.projects().map(p => ({
+      value: p.id,
+      label: p.name,
+      icon: 'fi fi-rr-folder'
+    }))
+  ]);
+
+  typeFilterOptions: SelectOption[] = [
+    { value: 'all', label: 'All Types' },
+    { value: 'story', label: 'Story', icon: 'fi fi-rr-book-alt' },
+    { value: 'bug', label: 'Bug', icon: 'fi fi-rr-bug' },
+    { value: 'task', label: 'Task', icon: 'fi fi-rr-check-circle' },
+    { value: 'epic', label: 'Epic', icon: 'fi fi-rr-rocket-takeoff' }
+  ];
+
+  priorityFilterOptions: SelectOption[] = [
+    { value: 'all', label: 'All Priorities' },
+    { value: 'urgent', label: 'Urgent' },
+    { value: 'high', label: 'High' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'low', label: 'Low' }
+  ];
+
+  labelFilterOptions = computed<SelectOption[]>(() => [
+    { value: 'all', label: 'All Labels' },
+    ...this.availableLabels().map(lbl => ({
+      value: lbl,
+      label: `#${lbl}`
+    }))
+  ]);
+
+  dueDateFilterOptions: SelectOption[] = [
+    { value: 'all', label: 'All Dates' },
+    { value: 'overdue', label: 'Overdue' },
+    { value: 'today', label: 'Due Today' },
+    { value: 'week', label: 'Due This Week' },
+    { value: 'has_date', label: 'Has Due Date' },
+    { value: 'no_date', label: 'No Due Date' }
+  ];
+
   showCreateModal = signal<boolean>(false);
   createDefaultStatus = signal<string>('');
   editingTask = signal<Task | null>(null);
@@ -555,12 +575,7 @@ export class TasksComponent {
     public workflowService: WorkflowService,
     public workspaceService: WorkspaceService,
     public taskShareService: TaskShareService
-  ) {
-    const projList = this.projectService.projects();
-    if (projList.length > 0) {
-      this.selectedProjectId.set(projList[0].id);
-    }
-  }
+  ) {}
 
   onProjectChange(projId: string) {
     this.selectedProjectId.set(projId);

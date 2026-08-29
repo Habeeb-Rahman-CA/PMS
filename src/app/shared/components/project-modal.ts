@@ -1,22 +1,21 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProjectService } from '../../core/services/project.service';
 import { Project } from '../../core/models/project.model';
+import { SelectComponent, SelectOption } from './select';
 
 @Component({
   selector: 'app-project-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SelectComponent],
   template: `
     <div class="modal-overlay" (click)="close.emit()">
       <div class="modal-card paper-panel font-mono" (click)="$event.stopPropagation()">
         <!-- Header Strip -->
         <div class="modal-header">
           <div class="header-left">
-            <span class="badge-mono">{{ isEditMode ? 'EDIT PROJECT' : 'NEW PROJECT' }}</span>
             <h3>
-              <i [class]="isEditMode ? 'fi fi-rr-edit text-cyan' : 'fi fi-rr-folder-add text-cyan'"></i>
               <span>{{ isEditMode ? 'Edit Project Setup' : 'Create Project' }}</span>
             </h3>
           </div>
@@ -31,13 +30,13 @@ import { Project } from '../../core/models/project.model';
             <div class="form-group">
               <label class="form-label">PROJECT NAME <span class="text-rose">*</span></label>
               <input
+                #nameInput
                 type="text"
                 class="form-input"
                 [(ngModel)]="name"
                 name="name"
                 placeholder="e.g. Tokio Async Microservice or bilo Core Engine"
                 required
-                autofocus
               />
             </div>
 
@@ -56,15 +55,17 @@ import { Project } from '../../core/models/project.model';
               </div>
             </div>
 
-            <!-- Status Row -->
-            <div class="form-group">
-              <label class="form-label">INITIAL STATUS</label>
-              <select class="form-select" [(ngModel)]="status" name="status">
-                <option value="active">Active Workspace</option>
-                <option value="completed">Completed Project</option>
-                <option value="archived">Archived Workspace</option>
-              </select>
-            </div>
+            <!-- Status Row (Only visible when editing an existing project) -->
+            @if (isEditMode) {
+              <div class="form-group">
+                <label class="form-label">PROJECT STATUS</label>
+                <app-select
+                  [options]="projectStatusOptions"
+                  [(value)]="status"
+                  placeholder="Select status..."
+                ></app-select>
+              </div>
+            }
 
             <!-- Labels Input -->
             <div class="form-group">
@@ -209,6 +210,8 @@ import { Project } from '../../core/models/project.model';
       font-size: 0.8rem;
       padding: 0.45rem 0.65rem;
       transition: var(--transition-fast);
+      width: 100%;
+      box-sizing: border-box;
     }
     .form-input:focus, .form-select:focus, .form-textarea:focus {
       outline: none;
@@ -220,6 +223,7 @@ import { Project } from '../../core/models/project.model';
       position: relative;
       display: flex;
       align-items: center;
+      width: 100%;
     }
     .field-icon {
       position: absolute;
@@ -277,9 +281,11 @@ import { Project } from '../../core/models/project.model';
     }
   `]
 })
-export class ProjectModalComponent implements OnInit {
+export class ProjectModalComponent implements OnInit, AfterViewInit {
   @Input() projectToEdit: Partial<Project> | null = null;
   @Output() close = new EventEmitter<Project | undefined>();
+
+  @ViewChild('nameInput') nameInput!: ElementRef<HTMLInputElement>;
 
   name = '';
   repositoryUrl = '';
@@ -287,6 +293,12 @@ export class ProjectModalComponent implements OnInit {
   status: 'active' | 'archived' | 'completed' = 'active';
   labelsInput = '';
   color = '#06b6d4';
+
+  projectStatusOptions: SelectOption[] = [
+    { value: 'active', label: 'Active Workspace' },
+    { value: 'completed', label: 'Completed Project' },
+    { value: 'archived', label: 'Archived Workspace' }
+  ];
 
   availableColors = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#f43f5e', '#3b82f6'];
 
@@ -305,6 +317,14 @@ export class ProjectModalComponent implements OnInit {
       this.labelsInput = (this.projectToEdit.labels || []).join(', ');
       this.color = this.projectToEdit.color || '#06b6d4';
     }
+  }
+
+  ngAfterViewInit() {
+    setTimeout(() => {
+      if (this.nameInput) {
+        this.nameInput.nativeElement.focus();
+      }
+    }, 50);
   }
 
   async saveProject() {
@@ -332,7 +352,7 @@ export class ProjectModalComponent implements OnInit {
         name: this.name,
         repository_url: this.repositoryUrl,
         description: this.description,
-        status: this.status,
+        status: 'active',
         labels: parsedLabels,
         color: this.color
       });

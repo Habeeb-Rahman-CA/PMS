@@ -7,11 +7,12 @@ import { WorkspaceService } from '../../core/services/workspace.service';
 import { Task } from '../../core/models/project.model';
 import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
 import { TaskModalComponent } from '../../shared/components/task-modal';
+import { SelectComponent, SelectOption } from '../../shared/components/select';
 
 @Component({
   selector: 'app-today',
   standalone: true,
-  imports: [CommonModule, FormsModule, TaskDetailModalComponent, TaskModalComponent],
+  imports: [CommonModule, FormsModule, TaskDetailModalComponent, TaskModalComponent, SelectComponent],
   template: `
     <div class="today-workspace">
       <!-- Top Header Strip -->
@@ -88,11 +89,21 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
         <div class="paper-panel grid-card">
           <div class="card-header">
             <h3><i class="fi fi-rr-chart-pie text-cyan"></i> Status Overview</h3>
-            <span class="badge-mono font-mono">{{ totalTaskCount() }} Total</span>
+            <div class="card-header-actions">
+              <div class="project-filter-wrap">
+                <app-select
+                  [options]="projectOptions()"
+                  [value]="selectedStatusProjectId()"
+                  (valueChange)="selectedStatusProjectId.set($event)"
+                  [compact]="true"
+                ></app-select>
+              </div>
+              <span class="badge-mono font-mono">{{ filteredStatusTasksCount() }} Tasks</span>
+            </div>
           </div>
 
           <div class="card-body donut-body">
-            @if (totalTaskCount() === 0) {
+            @if (filteredStatusTasksCount() === 0) {
               <div class="empty-chart font-mono">
                 <i class="fi fi-rr-chart-pie text-subtle"></i>
                 <span>No tasks available for status overview</span>
@@ -115,7 +126,7 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
                   }
                 </svg>
                 <div class="donut-center-text font-mono">
-                  <span class="center-num">{{ totalTaskCount() }}</span>
+                  <span class="center-num">{{ filteredStatusTasksCount() }}</span>
                   <span class="center-lbl">TASKS</span>
                 </div>
               </div>
@@ -355,6 +366,14 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
       display: flex;
       align-items: center;
       gap: 0.45rem;
+    }
+    .card-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .project-filter-wrap {
+      width: 140px;
     }
     .card-body {
       flex: 1;
@@ -625,40 +644,84 @@ export class TodayComponent {
     return tasks.filter(t => !t.completed && t.due_date && t.due_date >= todayStr && t.due_date <= sevenDaysAhead).length;
   });
 
+  selectedStatusProjectId = signal<string>('all');
+
+  projectOptions = computed<SelectOption[]>(() => [
+    { value: 'all', label: 'All Projects', icon: 'fi fi-rr-apps' },
+    ...this.projectService.projects().map(p => ({
+      value: p.id,
+      label: p.name,
+      icon: 'fi fi-rr-folder'
+    }))
+  ]);
+
   totalTaskCount = computed(() => this.taskService.tasks().length);
 
-  // Status Breakdown & Donut SVG calculation
+  filteredStatusTasksCount = computed(() => {
+    let tasks = this.taskService.tasks();
+    const projId = this.selectedStatusProjectId();
+    if (projId !== 'all') {
+      tasks = tasks.filter(t => t.project_id === projId);
+    }
+    return tasks.length;
+  });
+
+  // Dynamic Status Breakdown & Donut SVG calculation across projects
   statusCounts = computed(() => {
-    const tasks = this.taskService.tasks();
+    let tasks = this.taskService.tasks();
+    const projId = this.selectedStatusProjectId();
+    if (projId !== 'all') {
+      tasks = tasks.filter(t => t.project_id === projId);
+    }
     const total = tasks.length;
     if (total === 0) return [];
 
-    const map: Record<string, { count: number; color: string }> = {
-      'Todo': { count: 0, color: '#8c857b' },
-      'In Progress': { count: 0, color: '#0284c7' },
-      'In Review': { count: 0, color: '#d97706' },
-      'Done': { count: 0, color: '#16a34a' }
+    const countMap = new Map<string, number>();
+    tasks.forEach(t => {
+      const raw = (t.status || 'Todo').trim();
+      const displayStatus = raw
+        .split('_')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+      countMap.set(displayStatus, (countMap.get(displayStatus) || 0) + 1);
+    });
+
+    const COLOR_PALETTE = ['#0284c7', '#16a34a', '#d97706', '#8c857b', '#7c3aed', '#dc2626', '#06b6d4', '#ec4899', '#f59e0b'];
+
+    const knownColors: Record<string, string> = {
+      'to do': '#3b82f6',
+      'todo': '#3b82f6',
+      'backlog': '#64748b',
+      'in progress': '#eab308',
+      'in_progress': '#eab308',
+      'in review': '#a855f7',
+      'in_review': '#a855f7',
+      'review': '#a855f7',
+      'done': '#22c55e',
+      'completed': '#22c55e'
     };
 
-    tasks.forEach(t => {
-      const st = t.status || 'Todo';
-      if (map[st]) {
-        map[st].count++;
-      } else {
-        map['In Progress'].count++;
+    let paletteIdx = 0;
+    const result: { name: string; count: number; percent: number; color: string }[] = [];
+
+    countMap.forEach((count, statusName) => {
+      const lower = statusName.toLowerCase();
+      let color = knownColors[lower];
+      if (!color) {
+        color = COLOR_PALETTE[paletteIdx % COLOR_PALETTE.length];
+        paletteIdx++;
       }
+      const percent = total > 0 ? Math.round((count / total) * 100) : 0;
+      result.push({ name: statusName, count, percent, color });
     });
 
-    return Object.keys(map).map(k => {
-      const count = map[k].count;
-      const percent = total > 0 ? Math.round((count / total) * 100) : 0;
-      return { name: k, count, percent, color: map[k].color };
-    });
+    result.sort((a, b) => b.count - a.count);
+    return result;
   });
 
   donutSegments = computed(() => {
     const list = this.statusCounts();
-    const total = this.totalTaskCount();
+    const total = this.filteredStatusTasksCount();
     if (total === 0) return [];
 
     const circumference = 2 * Math.PI * 38; // ~238.76

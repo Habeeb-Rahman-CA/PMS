@@ -39,6 +39,7 @@ import { Task } from './core/models/project.model';
   styleUrl: './app.css'
 })
 export class App {
+  readonly appVersion = 'v1.0.1';
   sidebarCollapsed = signal<boolean>(false);
   mobileMenuOpen = signal<boolean>(false);
   editingSharedTask = signal<Task | null>(null);

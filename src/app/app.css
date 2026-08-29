@@ -366,6 +366,12 @@
 .footer-right {
   display: flex;
   align-items: center;
+  gap: 0.45rem;
+}
+
+.app-version-badge {
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .builder-tag {

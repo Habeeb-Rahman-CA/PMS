@@ -11,11 +11,30 @@ export interface WorkspaceItem {
   desc: string;
 }
 
+const WORKSPACE_HASH_MAP: Record<string, WorkspaceSection> = {
+  'today': '01 TODAY',
+  'projects': '02 PROJECTS',
+  'backlog': '03 BACKLOG',
+  'tasks': '04 TASKS',
+  'board': '04 TASKS',
+  'calendar': '05 CALENDAR',
+  'archive': '06 ARCHIVE'
+};
+
+const WORKSPACE_SECTION_TO_HASH: Record<WorkspaceSection, string> = {
+  '01 TODAY': 'today',
+  '02 PROJECTS': 'projects',
+  '03 BACKLOG': 'backlog',
+  '04 TASKS': 'tasks',
+  '05 CALENDAR': 'calendar',
+  '06 ARCHIVE': 'archive'
+};
+
 @Injectable({
   providedIn: 'root'
 })
 export class WorkspaceService {
-  activeWorkspace = signal<WorkspaceSection>('01 TODAY');
+  activeWorkspace = signal<WorkspaceSection>(this.getInitialWorkspace());
   commandPaletteOpen = signal<boolean>(false);
   shortcutsModalOpen = signal<boolean>(false);
   globalCreateTaskModalOpen = signal<boolean>(false);
@@ -31,10 +50,43 @@ export class WorkspaceService {
 
   constructor() {
     this.initKeyboardListeners();
+    this.initHashListener();
   }
 
-  setWorkspace(workspace: WorkspaceSection) {
+  private getInitialWorkspace(): WorkspaceSection {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.replace('#', '').toLowerCase().trim();
+      if (hash && WORKSPACE_HASH_MAP[hash]) {
+        return WORKSPACE_HASH_MAP[hash];
+      }
+
+      const saved = localStorage.getItem('bilo_active_workspace') as WorkspaceSection;
+      if (saved && WORKSPACE_SECTION_TO_HASH[saved]) {
+        return saved;
+      }
+    }
+    return '01 TODAY';
+  }
+
+  setWorkspace(workspace: WorkspaceSection, updateHash: boolean = true) {
     this.activeWorkspace.set(workspace);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('bilo_active_workspace', workspace);
+      if (updateHash) {
+        const hash = WORKSPACE_SECTION_TO_HASH[workspace] || 'today';
+        window.history.replaceState(null, '', '#' + hash);
+      }
+    }
+  }
+
+  private initHashListener() {
+    if (typeof window === 'undefined') return;
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash.replace('#', '').toLowerCase().trim();
+      if (hash && WORKSPACE_HASH_MAP[hash]) {
+        this.setWorkspace(WORKSPACE_HASH_MAP[hash], false);
+      }
+    });
   }
 
   toggleCommandPalette() {

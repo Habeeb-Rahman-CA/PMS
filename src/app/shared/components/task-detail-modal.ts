@@ -5,13 +5,15 @@ import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
 import { WorkflowService } from '../../core/services/workflow.service';
 import { TaskShareService } from '../../core/services/task-share.service';
-import { Task, TaskComment, Workflow } from '../../core/models/project.model';
+import { Task, TaskComment, TaskPriority, TaskType, Workflow } from '../../core/models/project.model';
 import { getTaskKey } from '../../core/utils/task-key.util';
+import { SelectComponent, SelectOption } from './select';
+import { DatePickerComponent } from './date-picker';
 
 @Component({
   selector: 'app-task-detail-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, SelectComponent, DatePickerComponent],
   template: `
     <div class="modal-overlay" (click)="close.emit()">
       <div class="modal-card detail-card" (click)="$event.stopPropagation()">
@@ -46,24 +48,108 @@ import { getTaskKey } from '../../core/utils/task-key.util';
         <div class="detail-body">
           <!-- Main Content Left Column -->
           <div class="main-col">
-            <h2 class="task-title">{{ task.title }}</h2>
+            <!-- Inline Title Edit -->
+            @if (isEditingTitle()) {
+              <div class="inline-title-edit">
+                <input
+                  id="inline-title-input"
+                  type="text"
+                  class="form-input inline-title-input font-mono"
+                  [(ngModel)]="titleInputText"
+                  (keydown.enter)="saveTitle()"
+                  (keydown.escape)="cancelTitleEdit()"
+                  (blur)="saveTitle()"
+                />
+              </div>
+            } @else {
+              <h2
+                class="task-title editable-field"
+                (dblclick)="startEditingTitle()"
+                title="Double-click to edit title"
+              >
+                <span>{{ task.title }}</span>
+                <i class="fi fi-rr-edit edit-hint-icon" (click)="startEditingTitle()" title="Edit title"></i>
+              </h2>
+            }
 
+            <!-- Description Box -->
             <div class="description-box">
-              <h4 class="section-heading"><i class="fi fi-rr-align-left"></i> Description</h4>
-              <p class="desc-text">{{ task.description || 'No description provided for this task.' }}</p>
+              <div class="section-heading-row">
+                <h4 class="section-heading"><i class="fi fi-rr-align-left"></i> Description</h4>
+                @if (!isEditingDesc()) {
+                  <button class="btn-ghost-edit" (click)="startEditingDesc()" title="Edit description">
+                    <i class="fi fi-rr-edit"></i> Edit
+                  </button>
+                }
+              </div>
+
+              @if (isEditingDesc()) {
+                <div class="inline-desc-edit">
+                  <textarea
+                    id="inline-desc-input"
+                    class="form-textarea inline-desc-textarea"
+                    rows="4"
+                    [(ngModel)]="descInputText"
+                    placeholder="Add a detailed description..."
+                  ></textarea>
+                  <div class="inline-edit-btn-row">
+                    <button class="btn btn-secondary btn-xs" (click)="cancelDescEdit()">Cancel</button>
+                    <button class="btn btn-primary btn-xs" (click)="saveDesc()">Save Description</button>
+                  </div>
+                </div>
+              } @else {
+                <div
+                  class="desc-text editable-field"
+                  [class.empty-desc]="!task.description"
+                  (dblclick)="startEditingDesc()"
+                  title="Double-click to edit description"
+                >
+                  {{ task.description || 'No description provided for this task. Double-click or click Edit to add one.' }}
+                </div>
+              }
             </div>
 
-            <!-- Labels -->
-            @if (task.labels && task.labels.length > 0) {
-              <div class="labels-box">
+            <!-- Labels Box -->
+            <div class="labels-box">
+              <div class="section-heading-row">
                 <h4 class="section-heading"><i class="fi fi-rr-tags"></i> Labels</h4>
-                <div class="chips font-mono">
-                  @for (l of task.labels; track l) {
-                    <span class="chip">#{{ l }}</span>
+                @if (!isEditingLabels()) {
+                  <button class="btn-ghost-edit" (click)="startEditingLabels()" title="Edit labels">
+                    <i class="fi fi-rr-edit"></i> Edit
+                  </button>
+                }
+              </div>
+
+              @if (isEditingLabels()) {
+                <div class="inline-labels-edit">
+                  <input
+                    id="inline-labels-input"
+                    type="text"
+                    class="form-input inline-labels-input font-mono"
+                    [(ngModel)]="labelsInputText"
+                    placeholder="Comma-separated labels, e.g. frontend, angular, bug"
+                    (keydown.enter)="saveLabels()"
+                    (keydown.escape)="cancelLabelsEdit()"
+                    (blur)="saveLabels()"
+                  />
+                  <span class="input-hint font-mono">Press Enter or click outside to save</span>
+                </div>
+              } @else {
+                <div
+                  class="chips font-mono editable-field"
+                  (dblclick)="startEditingLabels()"
+                  title="Double-click to edit labels"
+                >
+                  @if (task.labels && task.labels.length > 0) {
+                    @for (l of task.labels; track l) {
+                      <span class="chip">#{{ l }}</span>
+                    }
+                  } @else {
+                    <span class="no-labels-text">+ Double-click to add labels</span>
                   }
                 </div>
-              </div>
-            }
+              }
+            </div>
 
             <!-- Comments & Discussion Section -->
             <div class="comments-section">
@@ -181,42 +267,63 @@ import { getTaskKey } from '../../core/utils/task-key.util';
           <div class="meta-col glass-panel">
             <div class="meta-group">
               <label class="meta-label">Status</label>
-              <select
-                class="form-select status-select"
-                [ngModel]="task.status"
-                (ngModelChange)="updateStatus($event)"
-              >
-                @for (col of getAvailableStatuses(); track col.id) {
-                  <option [value]="col.name">{{ col.name }}</option>
-                }
-              </select>
+              <app-select
+                [options]="statusOptions"
+                [value]="task.status"
+                (valueChange)="updateStatus($event)"
+                placeholder="Select status..."
+              ></app-select>
+            </div>
+
+            <div class="meta-group">
+              <label class="meta-label">Issue Type</label>
+              <app-select
+                [options]="typeOptions"
+                [value]="task.type"
+                (valueChange)="updateType($event)"
+                placeholder="Select type..."
+              ></app-select>
+            </div>
+
+            <div class="meta-group">
+              <label class="meta-label">Priority</label>
+              <app-select
+                [options]="priorityOptions"
+                [value]="task.priority || 'medium'"
+                (valueChange)="updatePriority($event)"
+                placeholder="Select priority..."
+              ></app-select>
             </div>
 
             <div class="meta-group">
               <label class="meta-label">Assignee</label>
-              <div class="meta-val">
-                <i class="fi fi-rr-user text-cyan"></i> {{ task.assignee || 'Self' }}
-              </div>
+              <input
+                type="text"
+                class="form-input meta-input font-mono"
+                [ngModel]="task.assignee || ''"
+                (blur)="updateAssignee($event)"
+                (keydown.enter)="updateAssignee($event)"
+                placeholder="Assignee name..."
+              />
             </div>
 
             <div class="meta-group">
               <label class="meta-label">Due Date</label>
-              <div class="meta-val">
-                <i class="fi fi-rr-calendar"></i> {{ task.due_date || 'No due date' }}
-              </div>
+              <app-date-picker
+                [value]="task.due_date || ''"
+                (valueChange)="updateDueDate($event)"
+                placeholder="Set due date..."
+              ></app-date-picker>
             </div>
 
             <div class="meta-group">
               <label class="meta-label">Created</label>
-              <div class="meta-subval">{{ formatDate(task.created_at) }}</div>
+              <div class="meta-subval font-mono">{{ formatDate(task.created_at) }}</div>
             </div>
 
             <div class="meta-actions">
               <button class="btn btn-secondary btn-sm full-width" (click)="taskShareService.copyTaskShareLink(task, $event)">
                 <i class="fi fi-rr-share"></i> Copy Share Link
-              </button>
-              <button class="btn btn-secondary btn-sm full-width" (click)="editTask.emit(task)">
-                <i class="fi fi-rr-edit"></i> Edit Task
               </button>
               <button class="btn btn-ghost btn-sm btn-danger full-width" (click)="deleteTask()">
                 <i class="fi fi-rr-trash"></i> Delete Task
@@ -296,18 +403,77 @@ import { getTaskKey } from '../../core/utils/task-key.util';
       flex-direction: column;
       gap: 1.25rem;
     }
+    .section-heading-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+    }
+    .section-heading {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .btn-ghost-edit {
+      background: transparent;
+      border: none;
+      color: var(--text-subtle);
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: var(--radius-xs);
+      transition: var(--transition);
+    }
+    .btn-ghost-edit:hover {
+      color: var(--text-main);
+      background: var(--bg-surface-hover);
+    }
+    .editable-field {
+      cursor: pointer;
+      position: relative;
+      transition: var(--transition);
+    }
+    .editable-field:hover {
+      outline: 1px dashed var(--accent-cyan);
+      outline-offset: 2px;
+      border-radius: var(--radius-xs);
+    }
     .task-title {
       font-size: 1.35rem;
       font-weight: 700;
       color: var(--text-main);
     }
-    .section-heading {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      margin-bottom: 0.4rem;
+    .task-title.editable-field {
       display: flex;
       align-items: center;
-      gap: 0.4rem;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.2rem 0.4rem;
+      border-radius: var(--radius-xs);
+    }
+    .edit-hint-icon {
+      font-size: 0.9rem;
+      color: var(--text-subtle);
+      opacity: 0;
+      transition: var(--transition);
+    }
+    .task-title.editable-field:hover .edit-hint-icon {
+      opacity: 0.8;
+      color: var(--accent-cyan);
+    }
+    .inline-title-edit {
+      width: 100%;
+    }
+    .inline-title-input {
+      font-size: 1.25rem;
+      font-weight: 700;
+      padding: 0.35rem 0.6rem;
+      width: 100%;
     }
     .desc-text {
       font-size: 0.9rem;
@@ -318,10 +484,29 @@ import { getTaskKey } from '../../core/utils/task-key.util';
       border-radius: var(--radius-md);
       border: 1px solid var(--border-subtle);
     }
+    .empty-desc {
+      color: var(--text-subtle) !important;
+      font-style: italic;
+    }
+    .inline-desc-edit {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .inline-desc-textarea {
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+    .inline-edit-btn-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.4rem;
+    }
     .chips {
       display: flex;
       gap: 0.4rem;
       flex-wrap: wrap;
+      padding: 0.2rem;
     }
     .chip {
       font-size: 0.75rem;
@@ -329,6 +514,29 @@ import { getTaskKey } from '../../core/utils/task-key.util';
       background: rgba(6, 182, 212, 0.15);
       padding: 0.2rem 0.6rem;
       border-radius: var(--radius-sm);
+    }
+    .no-labels-text {
+      font-size: 0.775rem;
+      color: var(--text-subtle);
+      font-style: italic;
+    }
+    .inline-labels-edit {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .inline-labels-input {
+      font-size: 0.825rem;
+      padding: 0.35rem 0.5rem;
+    }
+    .input-hint {
+      font-size: 0.7rem;
+      color: var(--text-subtle);
+    }
+    .meta-input {
+      font-size: 0.825rem;
+      padding: 0.35rem 0.5rem;
+      height: 32px;
     }
     .comments-section {
       margin-top: 1rem;
@@ -537,6 +745,30 @@ export class TaskDetailModalComponent implements OnInit {
   editingCommentId = signal<string | null>(null);
   editText = '';
 
+  // Inline edit state
+  isEditingTitle = signal<boolean>(false);
+  titleInputText = '';
+
+  isEditingDesc = signal<boolean>(false);
+  descInputText = '';
+
+  isEditingLabels = signal<boolean>(false);
+  labelsInputText = '';
+
+  priorityOptions: SelectOption[] = [
+    { value: 'urgent', label: 'Urgent', icon: 'fi fi-rr-exclamation text-rose' },
+    { value: 'high', label: 'High', icon: 'fi fi-rr-arrow-up text-amber' },
+    { value: 'medium', label: 'Medium', icon: 'fi fi-rr-minus text-cyan' },
+    { value: 'low', label: 'Low', icon: 'fi fi-rr-arrow-down text-subtle' }
+  ];
+
+  typeOptions: SelectOption[] = [
+    { value: 'task', label: 'Task', icon: 'fi fi-rr-checkbox' },
+    { value: 'story', label: 'User Story', icon: 'fi fi-rr-book-alt text-cyan' },
+    { value: 'bug', label: 'Bug', icon: 'fi fi-rr-bug text-rose' },
+    { value: 'epic', label: 'Epic', icon: 'fi fi-rr-rocket-takeoff text-amber' }
+  ];
+
   constructor(
     private taskService: TaskService,
     private projectService: ProjectService,
@@ -553,6 +785,13 @@ export class TaskDetailModalComponent implements OnInit {
 
   getAvailableStatuses(): Workflow[] {
     return this.workflowService.getWorkflowsForProject(this.task?.project_id);
+  }
+
+  get statusOptions(): SelectOption[] {
+    return this.getAvailableStatuses().map(s => ({
+      value: s.name,
+      label: s.name
+    }));
   }
 
   getTaskKeyStr(task?: Task): string {
@@ -574,6 +813,79 @@ export class TaskDetailModalComponent implements OnInit {
     }
   }
 
+  // Inline Title Editing
+  startEditingTitle() {
+    this.titleInputText = this.task.title;
+    this.isEditingTitle.set(true);
+    setTimeout(() => {
+      const el = document.getElementById('inline-title-input');
+      if (el) (el as HTMLInputElement).focus();
+    }, 50);
+  }
+
+  cancelTitleEdit() {
+    this.isEditingTitle.set(false);
+  }
+
+  async saveTitle() {
+    if (!this.isEditingTitle()) return;
+    this.isEditingTitle.set(false);
+    const trimmed = this.titleInputText.trim();
+    if (trimmed && trimmed !== this.task.title) {
+      const updated = await this.taskService.updateTask(this.task.id, { title: trimmed });
+      if (updated) this.task = updated;
+    }
+  }
+
+  // Inline Description Editing
+  startEditingDesc() {
+    this.descInputText = this.task.description || '';
+    this.isEditingDesc.set(true);
+    setTimeout(() => {
+      const el = document.getElementById('inline-desc-input');
+      if (el) (el as HTMLTextAreaElement).focus();
+    }, 50);
+  }
+
+  cancelDescEdit() {
+    this.isEditingDesc.set(false);
+  }
+
+  async saveDesc() {
+    if (!this.isEditingDesc()) return;
+    this.isEditingDesc.set(false);
+    if (this.descInputText !== (this.task.description || '')) {
+      const updated = await this.taskService.updateTask(this.task.id, { description: this.descInputText });
+      if (updated) this.task = updated;
+    }
+  }
+
+  // Inline Labels Editing
+  startEditingLabels() {
+    this.labelsInputText = (this.task.labels || []).join(', ');
+    this.isEditingLabels.set(true);
+    setTimeout(() => {
+      const el = document.getElementById('inline-labels-input');
+      if (el) (el as HTMLInputElement).focus();
+    }, 50);
+  }
+
+  cancelLabelsEdit() {
+    this.isEditingLabels.set(false);
+  }
+
+  async saveLabels() {
+    if (!this.isEditingLabels()) return;
+    this.isEditingLabels.set(false);
+    const parsed = this.labelsInputText
+      .split(',')
+      .map(l => l.trim().toLowerCase())
+      .filter(l => l.length > 0);
+    const updated = await this.taskService.updateTask(this.task.id, { labels: parsed });
+    if (updated) this.task = updated;
+  }
+
+  // Metadata Field Handlers
   async updateStatus(newStatus: string) {
     const available = this.getAvailableStatuses();
     const wf = available.find(w => w.name === newStatus);
@@ -583,6 +895,29 @@ export class TaskDetailModalComponent implements OnInit {
       workflow_id: wf?.id
     });
     if (updated) this.task = updated;
+  }
+
+  async updatePriority(newPriority: TaskPriority) {
+    const updated = await this.taskService.updateTask(this.task.id, { priority: newPriority });
+    if (updated) this.task = updated;
+  }
+
+  async updateType(newType: TaskType) {
+    const updated = await this.taskService.updateTask(this.task.id, { type: newType });
+    if (updated) this.task = updated;
+  }
+
+  async updateDueDate(newDueDate: string) {
+    const updated = await this.taskService.updateTask(this.task.id, { due_date: newDueDate });
+    if (updated) this.task = updated;
+  }
+
+  async updateAssignee(event: Event) {
+    const val = (event.target as HTMLInputElement).value.trim();
+    if (val !== (this.task.assignee || '')) {
+      const updated = await this.taskService.updateTask(this.task.id, { assignee: val });
+      if (updated) this.task = updated;
+    }
   }
 
   async submitComment() {

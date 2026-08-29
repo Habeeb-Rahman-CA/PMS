@@ -19,6 +19,51 @@ export class TaskService {
     this.loadTasksFromSupabase();
   }
 
+  normalizeTaskStatuses(tasks: Task[]): { normalized: Task[]; hasChanges: boolean } {
+    const validGlobalStatuses = ['Backlog', 'To Do', 'In Progress', 'In Review', 'Done'];
+
+    let hasChanges = false;
+    const normalized = tasks.map(t => {
+      const currentStatus = (t.status || '').trim();
+      let targetStatus = currentStatus;
+
+      const exactMatch = validGlobalStatuses.find(s => s.toLowerCase() === currentStatus.toLowerCase());
+      if (exactMatch) {
+        targetStatus = exactMatch;
+      } else {
+        const lower = currentStatus.toLowerCase();
+        if (lower.includes('backlog')) {
+          targetStatus = 'Backlog';
+        } else if (lower.includes('todo') || lower === 'to do' || lower === 'open') {
+          targetStatus = 'To Do';
+        } else if (lower.includes('progress') || lower.includes('doing') || lower === 'wip') {
+          targetStatus = 'In Progress';
+        } else if (lower.includes('review') || lower.includes('testing')) {
+          targetStatus = 'In Review';
+        } else if (lower.includes('done') || lower.includes('complete') || lower.includes('closed')) {
+          targetStatus = 'Done';
+        } else {
+          targetStatus = 'Backlog';
+        }
+      }
+
+      const targetCompleted = targetStatus === 'Done';
+
+      if (targetStatus !== currentStatus || t.completed !== targetCompleted) {
+        hasChanges = true;
+        return {
+          ...t,
+          status: targetStatus,
+          completed: targetCompleted,
+          updated_at: new Date().toISOString()
+        };
+      }
+      return t;
+    });
+
+    return { normalized, hasChanges };
+  }
+
   private loadFromStorage() {
     const cached = localStorage.getItem('bilo_tasks_data');
     if (cached) {
@@ -26,7 +71,8 @@ export class TaskService {
         const data = JSON.parse(cached);
         if (data.tasks && Array.isArray(data.tasks)) {
           const cleanTasks = data.tasks.filter((t: Task) => !t.id.startsWith('task-demo-'));
-          this.tasks.set(cleanTasks);
+          const { normalized } = this.normalizeTaskStatuses(cleanTasks);
+          this.tasks.set(normalized);
           if (data.comments) {
             this.taskComments.set(data.comments);
           }
@@ -56,8 +102,20 @@ export class TaskService {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        this.tasks.set(data as Task[]);
+        const { normalized, hasChanges } = this.normalizeTaskStatuses(data as Task[]);
+        this.tasks.set(normalized);
         this.saveToStorage();
+
+        if (hasChanges) {
+          // Sync normalized statuses back to Supabase DB
+          for (const t of normalized) {
+            this.supabaseService.supabase
+              .from('tasks')
+              .update({ status: t.status, completed: t.completed })
+              .eq('id', t.id)
+              .then();
+          }
+        }
       }
     } catch (e) {
       console.warn('Could not load tasks from Supabase', e);
@@ -68,20 +126,35 @@ export class TaskService {
 
   async createTask(taskData: Partial<Task>): Promise<Task> {
     const newId = crypto.randomUUID();
+
+    let initialStatus = (taskData.status || 'Backlog').trim();
+    const exactMatch = ['Backlog', 'To Do', 'In Progress', 'In Review', 'Done'].find(s => s.toLowerCase() === initialStatus.toLowerCase());
+    if (exactMatch) {
+      initialStatus = exactMatch;
+    } else {
+      const lower = initialStatus.toLowerCase();
+      if (lower.includes('backlog')) initialStatus = 'Backlog';
+      else if (lower.includes('todo') || lower === 'to do' || lower === 'open') initialStatus = 'To Do';
+      else if (lower.includes('progress') || lower.includes('doing')) initialStatus = 'In Progress';
+      else if (lower.includes('review')) initialStatus = 'In Review';
+      else if (lower.includes('done') || lower.includes('complete')) initialStatus = 'Done';
+      else initialStatus = 'Backlog';
+    }
+
     const newTask: Task = {
       id: newId,
       project_id: taskData.project_id || '',
       title: taskData.title || 'Untitled Task',
       description: taskData.description || '',
       type: taskData.type || 'task',
-      status: taskData.status || 'todo',
+      status: initialStatus,
       priority: taskData.priority || 'medium',
       labels: taskData.labels || [],
       assignee: taskData.assignee || 'Self',
       due_date: taskData.due_date || '',
       position: 0,
       is_next: taskData.is_next || false,
-      completed: taskData.status === 'done',
+      completed: initialStatus === 'Done',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };

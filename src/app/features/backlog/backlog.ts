@@ -3,17 +3,19 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../core/services/task.service';
 import { ProjectService } from '../../core/services/project.service';
+import { WorkflowService } from '../../core/services/workflow.service';
 import { WorkspaceService } from '../../core/services/workspace.service';
 import { TaskShareService } from '../../core/services/task-share.service';
 import { Task } from '../../core/models/project.model';
 import { getTaskKey } from '../../core/utils/task-key.util';
 import { TaskDetailModalComponent } from '../../shared/components/task-detail-modal';
 import { TaskModalComponent } from '../../shared/components/task-modal';
+import { SelectComponent, SelectOption } from '../../shared/components/select';
 
 @Component({
   selector: 'app-backlog',
   standalone: true,
-  imports: [CommonModule, FormsModule, TaskDetailModalComponent, TaskModalComponent],
+  imports: [CommonModule, FormsModule, TaskDetailModalComponent, TaskModalComponent, SelectComponent],
   template: `
     <div class="backlog-workspace font-mono">
       <!-- Top Banner Bar -->
@@ -50,59 +52,56 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
           <!-- Project Filter -->
           <div class="filter-group">
             <span class="filter-label">PROJECT:</span>
-            <select class="filter-select font-mono" [(ngModel)]="selectedProject">
-              <option value="ALL">All Projects</option>
-              @for (proj of projectService.projects(); track proj.id) {
-                <option [value]="proj.id">{{ proj.name }}</option>
-              }
-            </select>
+            <app-select
+              [options]="projectFilterOptions()"
+              [value]="selectedProject()"
+              (valueChange)="selectedProject.set($event)"
+              [compact]="true"
+            ></app-select>
           </div>
 
           <!-- Type Filter -->
           <div class="filter-group">
             <span class="filter-label">TYPE:</span>
-            <select class="filter-select font-mono" [(ngModel)]="selectedType">
-              <option value="ALL">All Types</option>
-              <option value="story">Story</option>
-              <option value="bug">Bug</option>
-              <option value="task">Task</option>
-              <option value="epic">Epic</option>
-            </select>
+            <app-select
+              [options]="typeFilterOptions"
+              [value]="selectedType()"
+              (valueChange)="selectedType.set($event)"
+              [compact]="true"
+            ></app-select>
           </div>
 
           <!-- Priority Filter -->
           <div class="filter-group">
             <span class="filter-label">PRIORITY:</span>
-            <select class="filter-select font-mono" [(ngModel)]="selectedPriority">
-              <option value="ALL">All Priorities</option>
-              <option value="urgent">Urgent</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
+            <app-select
+              [options]="priorityFilterOptions"
+              [value]="selectedPriority()"
+              (valueChange)="selectedPriority.set($event)"
+              [compact]="true"
+            ></app-select>
           </div>
 
           <!-- Status Filter -->
           <div class="filter-group">
             <span class="filter-label">STATUS:</span>
-            <select class="filter-select font-mono" [(ngModel)]="selectedStatus">
-              <option value="ALL">All Statuses</option>
-              <option value="todo">Todo</option>
-              <option value="in_progress">In Progress</option>
-              <option value="review">In Review</option>
-              <option value="done">Done</option>
-            </select>
+            <app-select
+              [options]="statusFilterOptions()"
+              [value]="selectedStatus()"
+              (valueChange)="selectedStatus.set($event)"
+              [compact]="true"
+            ></app-select>
           </div>
 
           <!-- Sort By -->
           <div class="filter-group">
             <span class="filter-label">SORT:</span>
-            <select class="filter-select font-mono" [(ngModel)]="sortBy">
-              <option value="priority">Priority</option>
-              <option value="due_date">Due Date</option>
-              <option value="title">Title</option>
-              <option value="created_at">Created Date</option>
-            </select>
+            <app-select
+              [options]="sortOptions"
+              [value]="sortBy()"
+              (valueChange)="sortBy.set($event)"
+              [compact]="true"
+            ></app-select>
           </div>
 
           @if (hasActiveFilters()) {
@@ -214,16 +213,12 @@ import { TaskModalComponent } from '../../shared/components/task-modal';
 
                 <!-- Status Select -->
                 <div class="cell-status font-mono" (click)="$event.stopPropagation()">
-                  <select
-                    class="status-select font-mono"
-                    [ngModel]="normalizeStatus(t.status)"
-                    (ngModelChange)="updateStatus(t.id, $event)"
-                  >
-                    <option value="todo">Todo</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="review">In Review</option>
-                    <option value="done">Done</option>
-                  </select>
+                  <app-select
+                    [options]="rowStatusOptions()"
+                    [value]="normalizeStatus(t.status)"
+                    (valueChange)="updateStatus(t.id, $event)"
+                    [compact]="true"
+                  ></app-select>
                 </div>
 
                 <!-- Due Date -->
@@ -581,6 +576,53 @@ export class BacklogComponent implements OnInit {
   selectedStatus = signal<string>('ALL');
   sortBy = signal<string>('priority');
 
+  projectFilterOptions = computed<SelectOption[]>(() => [
+    { value: 'ALL', label: 'All Projects', icon: 'fi fi-rr-apps' },
+    ...this.projectService.projects().map(p => ({
+      value: p.id,
+      label: p.name,
+      icon: 'fi fi-rr-folder'
+    }))
+  ]);
+
+  typeFilterOptions: SelectOption[] = [
+    { value: 'ALL', label: 'All Types' },
+    { value: 'story', label: 'Story', icon: 'fi fi-rr-book-alt' },
+    { value: 'bug', label: 'Bug', icon: 'fi fi-rr-bug' },
+    { value: 'task', label: 'Task', icon: 'fi fi-rr-check-circle' },
+    { value: 'epic', label: 'Epic', icon: 'fi fi-rr-rocket-takeoff' }
+  ];
+
+  priorityFilterOptions: SelectOption[] = [
+    { value: 'ALL', label: 'All Priorities' },
+    { value: 'urgent', label: 'Urgent' },
+    { value: 'high', label: 'High' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'low', label: 'Low' }
+  ];
+
+  statusFilterOptions = computed<SelectOption[]>(() => [
+    { value: 'ALL', label: 'All Statuses' },
+    ...this.workflowService.globalWorkflows().map(w => ({
+      value: w.name,
+      label: w.name
+    }))
+  ]);
+
+  sortOptions: SelectOption[] = [
+    { value: 'priority', label: 'Priority' },
+    { value: 'due_date', label: 'Due Date' },
+    { value: 'title', label: 'Title' },
+    { value: 'created_at', label: 'Created Date' }
+  ];
+
+  rowStatusOptions = computed<SelectOption[]>(() =>
+    this.workflowService.globalWorkflows().map(w => ({
+      value: w.name,
+      label: w.name
+    }))
+  );
+
   showCreateModal = signal<boolean>(false);
   activeDetailTask = signal<Task | null>(null);
 
@@ -589,6 +631,7 @@ export class BacklogComponent implements OnInit {
   constructor(
     public taskService: TaskService,
     public projectService: ProjectService,
+    public workflowService: WorkflowService,
     public workspaceService: WorkspaceService,
     public taskShareService: TaskShareService
   ) { }
@@ -643,7 +686,7 @@ export class BacklogComponent implements OnInit {
     }
 
     if (st !== 'all') {
-      list = list.filter(t => this.normalizeStatus(t.status) === st);
+      list = list.filter(t => this.normalizeStatus(t.status).toLowerCase() === st);
     }
 
     // Sort logic
@@ -709,10 +752,11 @@ export class BacklogComponent implements OnInit {
     this.selectedTaskIds.set([]);
   }
 
-  async batchUpdateStatus(status: 'todo' | 'in_progress' | 'review' | 'done') {
+  async batchUpdateStatus(status: string) {
     const ids = this.selectedTaskIds();
+    const isDoneVal = status.toLowerCase() === 'done';
     for (const id of ids) {
-      await this.taskService.updateTask(id, { status, completed: status === 'done' });
+      await this.taskService.updateTask(id, { status, completed: isDoneVal });
     }
     this.clearSelection();
   }
@@ -772,16 +816,24 @@ export class BacklogComponent implements OnInit {
   }
 
   normalizeStatus(status: string): string {
-    if (!status) return 'todo';
-    const s = status.toLowerCase().replace(/ /g, '_');
-    if (s.includes('done') || s.includes('complete')) return 'done';
-    if (s.includes('prog') || s.includes('dev')) return 'in_progress';
-    if (s.includes('rev')) return 'review';
-    return 'todo';
+    if (!status) return 'Backlog';
+    const s = status.trim();
+    const workflows = this.workflowService.globalWorkflows();
+    const found = workflows.find(w => w.name.toLowerCase() === s.toLowerCase());
+    if (found) return found.name;
+
+    const lower = s.toLowerCase();
+    if (lower.includes('backlog')) return 'Backlog';
+    if (lower.includes('todo') || lower === 'to do' || lower === 'open') return 'To Do';
+    if (lower.includes('progress') || lower.includes('doing') || lower === 'wip') return 'In Progress';
+    if (lower.includes('review') || lower.includes('testing')) return 'In Review';
+    if (lower.includes('done') || lower.includes('complete')) return 'Done';
+
+    return workflows[0]?.name || 'Backlog';
   }
 
   isDone(status: string): boolean {
-    return this.normalizeStatus(status) === 'done';
+    return (status || '').toLowerCase().includes('done') || (status || '').toLowerCase().includes('complete');
   }
 
   isOverdue(t: Task): boolean {
