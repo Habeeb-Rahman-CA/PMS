@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/bilo-icon.svg" width="120" height="120" alt="Bilo Logo">
+  <img src="public/bilo-icon-dark.png" width="120" height="120" alt="Bilo Logo">
 </p>
 
 <h1 align="center">Bilo</h1>
@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.1-blue.svg" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.1.0-blue.svg" alt="Version">
   <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License">
   <img src="https://img.shields.io/badge/offline-supported-06b6d4.svg" alt="Offline Ready">
 </p>

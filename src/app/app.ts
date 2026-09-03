@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { WorkspaceService, WorkspaceSection } from './core/services/workspace.service';
 import { SyncService } from './core/services/sync.service';
@@ -39,10 +39,31 @@ import { Task } from './core/models/project.model';
   styleUrl: './app.css'
 })
 export class App {
-  readonly appVersion = 'v1.0.1';
+  readonly appVersion = 'v1.1.0';
   sidebarCollapsed = signal<boolean>(false);
   mobileMenuOpen = signal<boolean>(false);
   editingSharedTask = signal<Task | null>(null);
+
+  deferredPrompt: any = null;
+  canInstallPwa = signal<boolean>(false);
+
+  @HostListener('window:beforeinstallprompt', ['$event'])
+  onBeforeInstallPrompt(e: Event) {
+    e.preventDefault();
+    this.deferredPrompt = e;
+    this.canInstallPwa.set(true);
+  }
+
+  async installPwa() {
+    if (this.deferredPrompt) {
+      this.deferredPrompt.prompt();
+      const choiceResult = await this.deferredPrompt.userChoice;
+      if (choiceResult && choiceResult.outcome === 'accepted') {
+        this.canInstallPwa.set(false);
+      }
+      this.deferredPrompt = null;
+    }
+  }
 
   constructor(
     public workspaceService: WorkspaceService,

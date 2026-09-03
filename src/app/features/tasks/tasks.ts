@@ -146,13 +146,6 @@ import { SelectComponent, SelectOption } from '../../shared/components/select';
                   <h3>{{ col.name }}</h3>
                   <span class="badge-mono font-mono">{{ getColumnTasks(col.name).length }}</span>
                 </div>
-                <button
-                  class="btn btn-ghost btn-xs btn-icon"
-                  (click)="openCreateModal(col.name)"
-                  title="Add Task to {{ col.name }}"
-                >
-                  <i class="fi fi-rr-plus"></i>
-                </button>
               </div>
 
               <!-- CDK Drop List Container -->
@@ -533,10 +526,10 @@ export class TasksComponent {
 
   typeFilterOptions: SelectOption[] = [
     { value: 'all', label: 'All Types' },
+    { value: 'task', label: 'Task', icon: 'fi fi-rr-checkbox' },
     { value: 'story', label: 'Story', icon: 'fi fi-rr-book-alt' },
     { value: 'bug', label: 'Bug', icon: 'fi fi-rr-bug' },
-    { value: 'task', label: 'Task', icon: 'fi fi-rr-check-circle' },
-    { value: 'epic', label: 'Epic', icon: 'fi fi-rr-rocket-takeoff' }
+    { value: 'epic', label: 'Epic', icon: 'fi fi-rr-rocket' }
   ];
 
   priorityFilterOptions: SelectOption[] = [
@@ -682,7 +675,7 @@ export class TasksComponent {
     switch (type) {
       case 'story': return 'fi fi-rr-book-alt';
       case 'bug': return 'fi fi-rr-bug';
-      case 'epic': return 'fi fi-rr-rocket-takeoff';
+      case 'epic': return 'fi fi-rr-rocket';
       default: return 'fi fi-rr-check-circle';
     }
   }

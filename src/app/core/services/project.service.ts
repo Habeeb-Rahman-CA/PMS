@@ -67,8 +67,24 @@ export class ProjectService {
         }
         this.saveToStorage();
       }
+
+      // Load activities from Supabase project_activities
+      const { data: actData, error: actError } = await this.supabaseService.supabase
+        .from('project_activities')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(100);
+
+      if (!actError && actData && actData.length > 0) {
+        const existingIds = new Set((actData as any[]).map(a => a.id));
+        const localOnly = this.activities().filter(a => !existingIds.has(a.id));
+        const combined = [...(actData as ProjectActivity[]), ...localOnly]
+          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        this.activities.set(combined);
+        this.saveToStorage();
+      }
     } catch (e) {
-      console.warn('Could not load projects from Supabase', e);
+      console.warn('Could not load data from Supabase', e);
     } finally {
       this.loading.set(false);
     }
@@ -87,6 +103,8 @@ export class ProjectService {
       status: projectData.status || 'active',
       labels: projectData.labels || [],
       color: projectData.color || '#06b6d4',
+      image_url: projectData.image_url || '',
+      icon: projectData.icon || '',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -105,11 +123,62 @@ export class ProjectService {
       repository_url: newProj.repository_url,
       status: newProj.status,
       labels: newProj.labels,
-      color: newProj.color
+      color: newProj.color,
+      image_url: newProj.image_url,
+      icon: newProj.icon
     };
 
     this.syncService.enqueue('CREATE_PROJECT', payload);
     return newProj;
+  }
+
+  async uploadProjectImage(file: File): Promise<string> {
+    const fileToDataUrl = (): Promise<string> => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve((e.target?.result as string) || '');
+        reader.onerror = () => resolve('');
+        reader.readAsDataURL(file);
+      });
+    };
+
+    if (this.syncService.isOnline()) {
+      try {
+        const fileExt = file.name.split('.').pop() || 'png';
+        const fileName = `project-${crypto.randomUUID()}.${fileExt}`;
+
+        // Timeout promise after 4 seconds to prevent UI hanging
+        const timeoutPromise = new Promise<{ data: null; error: any }>((resolve) => {
+          setTimeout(() => resolve({ data: null, error: new Error('Upload request timed out after 4s') }), 4000);
+        });
+
+        const uploadPromise = this.supabaseService.supabase.storage
+          .from('project-images')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: true
+          });
+
+        const result = await Promise.race([uploadPromise, timeoutPromise]);
+
+        if (result && !result.error && result.data) {
+          const { data: publicUrlData } = this.supabaseService.supabase.storage
+            .from('project-images')
+            .getPublicUrl(fileName);
+
+          if (publicUrlData?.publicUrl) {
+            return publicUrlData.publicUrl;
+          }
+        } else if (result?.error) {
+          console.warn('[Supabase Storage] Upload failed or timed out:', result.error?.message);
+        }
+      } catch (e) {
+        console.warn('[Supabase Storage] Exception during upload:', e);
+      }
+    }
+
+    // Fallback: Read file as Data URL (base64) so it works offline or before bucket exists
+    return await fileToDataUrl();
   }
 
   async updateProject(id: string, updates: Partial<Project>): Promise<Project | null> {
@@ -141,6 +210,8 @@ export class ProjectService {
         status: updates.status,
         labels: updates.labels,
         color: updates.color,
+        image_url: updates.image_url,
+        icon: updates.icon,
         updated_at: new Date().toISOString()
       });
     }
@@ -175,12 +246,14 @@ export class ProjectService {
   logActivity(projectId: string, action: string, description: string) {
     const newAct: ProjectActivity = {
       id: crypto.randomUUID(),
-      project_id: projectId,
+      project_id: projectId || 'global',
       action,
       description,
       timestamp: new Date().toISOString()
     };
     this.activities.update(list => [newAct, ...list]);
+    this.saveToStorage();
+    this.syncService.enqueue('ADD_PROJECT_ACTIVITY', newAct);
   }
 
   getProjectProgress(projectId: string): { completed: number; total: number; percent: number } {

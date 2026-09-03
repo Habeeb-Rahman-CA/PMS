@@ -29,6 +29,8 @@ export interface Project {
   status: 'active' | 'archived' | 'completed';
   labels: string[];
   color: string;
+  image_url?: string;
+  icon?: string;
   created_at: string;
   updated_at: string;
 }
@@ -54,6 +56,7 @@ export interface Task {
   labels?: string[];
   assignee?: string;
   due_date?: string;
+  attachments?: string[];
   position: number;
   is_next: boolean;
   completed: boolean;
@@ -69,4 +72,14 @@ export interface TaskComment {
   content: string;
   created_at: string;
   updated_at?: string;
+}
+
+export interface TaskStatusHistory {
+  id: string;
+  task_id: string;
+  user_id?: string;
+  from_status?: string;
+  to_status: string;
+  changed_by?: string;
+  created_at: string;
 }

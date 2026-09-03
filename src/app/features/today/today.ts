@@ -745,7 +745,10 @@ export class TodayComponent {
 
   // Recent Activity (Latest 5 Entries)
   recentActivities = computed(() => {
-    return this.projectService.activities().slice(0, 5);
+    return this.projectService.activities()
+      .slice()
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 5);
   });
 
   // Priority Breakdown
@@ -776,7 +779,7 @@ export class TodayComponent {
       { name: 'Story', key: 'story', icon: 'fi fi-rr-book-alt', color: '#0284c7' },
       { name: 'Bug', key: 'bug', icon: 'fi fi-rr-bug', color: '#dc2626' },
       { name: 'Task', key: 'task', icon: 'fi fi-rr-check-circle', color: '#16a34a' },
-      { name: 'Epic', key: 'epic', icon: 'fi fi-rr-rocket-takeoff', color: '#7c3aed' }
+      { name: 'Epic', key: 'epic', icon: 'fi fi-rr-rocket', color: '#7c3aed' }
     ];
 
     return types.map(tp => {

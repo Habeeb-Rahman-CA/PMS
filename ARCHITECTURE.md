@@ -103,6 +103,8 @@ create table public.tasks (
     description text,
     type text not null default 'task', -- 'task', 'bug', 'story', 'note'
     priority text not null default 'medium', -- 'low', 'medium', 'high', 'urgent'
+    labels text[],
+    attachments text[], -- Array of image/attachment URLs
     due_date date,
     position integer not null default 0,
     is_next boolean default false, -- Dynamic "What to work on next" queue flag

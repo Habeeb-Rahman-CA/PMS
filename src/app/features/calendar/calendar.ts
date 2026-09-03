@@ -988,7 +988,7 @@ export class CalendarComponent implements OnInit {
     switch (t) {
       case 'story': return 'fi fi-rr-book-alt text-cyan';
       case 'bug': return 'fi fi-rr-bug text-rose';
-      case 'epic': return 'fi fi-rr-rocket-takeoff text-purple';
+      case 'epic': return 'fi fi-rr-rocket text-purple';
       default: return 'fi fi-rr-check-circle text-emerald';
     }
   }

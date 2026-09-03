@@ -1,7 +1,8 @@
 import { Injectable, signal } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { SyncService } from './sync.service';
-import { Task, TaskComment } from '../models/project.model';
+import { ProjectService } from './project.service';
+import { Task, TaskComment, TaskStatusHistory } from '../models/project.model';
 
 @Injectable({
   providedIn: 'root'
@@ -9,11 +10,13 @@ import { Task, TaskComment } from '../models/project.model';
 export class TaskService {
   tasks = signal<Task[]>([]);
   taskComments = signal<Record<string, TaskComment[]>>({});
+  taskStatusHistory = signal<Record<string, TaskStatusHistory[]>>({});
   loading = signal<boolean>(false);
 
   constructor(
     private supabaseService: SupabaseService,
-    private syncService: SyncService
+    private syncService: SyncService,
+    private projectService: ProjectService
   ) {
     this.loadFromStorage();
     this.loadTasksFromSupabase();
@@ -76,6 +79,9 @@ export class TaskService {
           if (data.comments) {
             this.taskComments.set(data.comments);
           }
+          if (data.statusHistory) {
+            this.taskStatusHistory.set(data.statusHistory);
+          }
           return;
         }
       } catch (e) {
@@ -87,7 +93,8 @@ export class TaskService {
   private saveToStorage() {
     localStorage.setItem('bilo_tasks_data', JSON.stringify({
       tasks: this.tasks(),
-      comments: this.taskComments()
+      comments: this.taskComments(),
+      statusHistory: this.taskStatusHistory()
     }));
   }
 
@@ -127,6 +134,14 @@ export class TaskService {
   async createTask(taskData: Partial<Task>): Promise<Task> {
     const newId = crypto.randomUUID();
 
+    let finalProjectId = taskData.project_id || '';
+    if (!finalProjectId || finalProjectId === 'ALL' || !this.syncService.isValidUuid(finalProjectId)) {
+      const activeProj = this.projectService.activeProject() || this.projectService.projects()[0];
+      if (activeProj) {
+        finalProjectId = activeProj.id;
+      }
+    }
+
     let initialStatus = (taskData.status || 'Backlog').trim();
     const exactMatch = ['Backlog', 'To Do', 'In Progress', 'In Review', 'Done'].find(s => s.toLowerCase() === initialStatus.toLowerCase());
     if (exactMatch) {
@@ -143,13 +158,14 @@ export class TaskService {
 
     const newTask: Task = {
       id: newId,
-      project_id: taskData.project_id || '',
+      project_id: finalProjectId,
       title: taskData.title || 'Untitled Task',
       description: taskData.description || '',
       type: taskData.type || 'task',
       status: initialStatus,
       priority: taskData.priority || 'medium',
       labels: taskData.labels || [],
+      attachments: taskData.attachments || [],
       assignee: taskData.assignee || 'Self',
       due_date: taskData.due_date || '',
       position: 0,
@@ -161,31 +177,44 @@ export class TaskService {
 
     // Update signal state & local storage immediately
     this.tasks.update(list => [newTask, ...list]);
-    this.saveToStorage();
 
-    // Queue mutation for sync
+    // Queue mutation for sync FIRST
     const payload = {
       id: newTask.id,
-      project_id: newTask.project_id || null,
+      project_id: this.syncService.isValidUuid(newTask.project_id) ? newTask.project_id : null,
       title: newTask.title,
       description: newTask.description,
       type: newTask.type,
       status: newTask.status,
       priority: newTask.priority,
       labels: newTask.labels,
+      attachments: newTask.attachments,
       assignee: newTask.assignee,
-      due_date: newTask.due_date || null,
+      due_date: newTask.due_date && newTask.due_date.trim() !== '' ? newTask.due_date : null,
       completed: newTask.completed
     };
-
     this.syncService.enqueue('CREATE_TASK', payload);
+
+    // Record initial status history SECOND
+    const historyEntry: TaskStatusHistory = {
+      id: crypto.randomUUID(),
+      task_id: newTask.id,
+      from_status: '',
+      to_status: initialStatus,
+      changed_by: newTask.assignee || 'Self',
+      created_at: newTask.created_at
+    };
+    this.recordStatusHistory(historyEntry);
+
+    this.projectService.logActivity(newTask.project_id, 'Task Created', `Created task "${newTask.title}"`);
     return newTask;
   }
 
   async updateTask(id: string, updates: Partial<Task>): Promise<Task | null> {
+    const existingTask = this.tasks().find(t => t.id === id);
     const updatedFields = {
       ...updates,
-      completed: updates.status ? updates.status === 'done' : undefined,
+      completed: updates.status ? updates.status === 'done' || updates.status === 'Done' : undefined,
       updated_at: new Date().toISOString()
     };
 
@@ -199,14 +228,88 @@ export class TaskService {
     }));
 
     if (updatedTask) {
-      this.saveToStorage();
-      this.syncService.enqueue('UPDATE_TASK', { id, ...updatedFields });
+      const taskObj: Task = updatedTask;
+      if (updates.status && existingTask && updates.status.trim().toLowerCase() !== existingTask.status.trim().toLowerCase()) {
+        const historyEntry: TaskStatusHistory = {
+          id: crypto.randomUUID(),
+          task_id: id,
+          from_status: existingTask.status,
+          to_status: updates.status,
+          changed_by: updates.assignee || existingTask.assignee || 'Self',
+          created_at: new Date().toISOString()
+        };
+        this.recordStatusHistory(historyEntry);
+        this.projectService.logActivity(taskObj.project_id, 'Status Updated', `Task "${taskObj.title}" moved to ${updates.status}`);
+      } else {
+        this.saveToStorage();
+        this.projectService.logActivity(taskObj.project_id, 'Task Updated', `Updated task "${taskObj.title}"`);
+      }
+      const payloadFields = { ...updatedFields };
+      if ('due_date' in payloadFields && (!payloadFields.due_date || (typeof payloadFields.due_date === 'string' && payloadFields.due_date.trim() === ''))) {
+        (payloadFields as any).due_date = null;
+      }
+      this.syncService.enqueue('UPDATE_TASK', { id, ...payloadFields });
     }
 
     return updatedTask;
   }
 
+  recordStatusHistory(entry: TaskStatusHistory) {
+    this.taskStatusHistory.update(map => ({
+      ...map,
+      [entry.task_id]: [...(map[entry.task_id] || []), entry]
+    }));
+    this.saveToStorage();
+    this.syncService.enqueue('ADD_STATUS_HISTORY', entry);
+  }
+
+  async loadStatusHistoryForTask(taskId: string): Promise<TaskStatusHistory[]> {
+    if (this.syncService.isOnline()) {
+      try {
+        const { data, error } = await this.supabaseService.supabase
+          .from('task_status_history')
+          .select('*')
+          .eq('task_id', taskId)
+          .order('created_at', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          this.taskStatusHistory.update(map => ({
+            ...map,
+            [taskId]: data as TaskStatusHistory[]
+          }));
+          this.saveToStorage();
+          return data as TaskStatusHistory[];
+        }
+      } catch (e) {
+        // fallback
+      }
+    }
+
+    const localList = this.taskStatusHistory()[taskId] || [];
+    if (localList.length === 0) {
+      const task = this.tasks().find(t => t.id === taskId);
+      if (task) {
+        return [
+          {
+            id: 'init-' + task.id,
+            task_id: task.id,
+            from_status: '',
+            to_status: task.status,
+            changed_by: task.assignee || 'Self',
+            created_at: task.created_at
+          }
+        ];
+      }
+    }
+
+    return [...localList].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+
   async deleteTask(id: string) {
+    const existing = this.tasks().find(t => t.id === id);
+    if (existing) {
+      this.projectService.logActivity(existing.project_id, 'Task Deleted', `Deleted task "${existing.title}"`);
+    }
     this.tasks.update(list => list.filter(t => t.id !== id));
     this.saveToStorage();
     this.syncService.enqueue('DELETE_TASK', { id });
@@ -247,6 +350,11 @@ export class TaskService {
       content,
       created_at: new Date().toISOString()
     };
+
+    const task = this.tasks().find(t => t.id === taskId);
+    if (task) {
+      this.projectService.logActivity(task.project_id, 'Comment Added', `Added comment on "${task.title}"`);
+    }
 
     // Update signal state immediately
     this.taskComments.update(map => ({

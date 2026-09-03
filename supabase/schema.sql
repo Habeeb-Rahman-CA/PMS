@@ -38,6 +38,7 @@ create table if not exists public.tasks (
     status text not null default '', -- status column name or workflow_id
     priority text not null default 'medium', -- low, medium, high, urgent
     labels text[] default '{}',
+    attachments text[] default '{}',
     assignee text default 'Self',
     due_date date,
     position integer not null default 0,

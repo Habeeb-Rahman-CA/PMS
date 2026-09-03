@@ -3,13 +3,14 @@
    Provides App Shell Cache & Network-First / Stale-While-Revalidate Caching
    ========================================================================== */
 
-const CACHE_NAME = 'bilo-pwa-v1';
+const CACHE_NAME = 'bilo-pwa-v1.1.0';
 
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/bilo-icon.svg',
+  '/bilo-icon-dark.png',
+  '/bilo-icon-light.png',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap',
   'https://cdn-uicons.flaticon.com/2.6.0/uicons-regular-rounded/css/uicons-regular-rounded.css',
   'https://cdn-uicons.flaticon.com/2.6.0/uicons-solid-rounded/css/uicons-solid-rounded.css',

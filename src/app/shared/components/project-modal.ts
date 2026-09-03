@@ -26,6 +26,13 @@ import { SelectComponent, SelectOption } from './select';
 
         <form (ngSubmit)="saveProject()" class="modal-form">
           <div class="form-body">
+            @if (submitted && !name.trim()) {
+              <div class="form-error-banner font-mono">
+                <i class="fi fi-rr-triangle-warning"></i>
+                <span>Please enter a project name before saving.</span>
+              </div>
+            }
+
             <!-- Project Name -->
             <div class="form-group">
               <label class="form-label">PROJECT NAME <span class="text-rose">*</span></label>
@@ -33,11 +40,17 @@ import { SelectComponent, SelectOption } from './select';
                 #nameInput
                 type="text"
                 class="form-input"
+                [class.input-error]="submitted && !name.trim()"
                 [(ngModel)]="name"
                 name="name"
                 placeholder="e.g. Tokio Async Microservice or bilo Core Engine"
                 required
               />
+              @if (submitted && !name.trim()) {
+                <span class="field-error-text font-mono">
+                  <i class="fi fi-rr-exclamation"></i> Project Name is required
+                </span>
+              }
             </div>
 
             <!-- Repository URL -->
@@ -91,6 +104,55 @@ import { SelectComponent, SelectOption } from './select';
               ></textarea>
             </div>
 
+            <!-- Project Image Upload -->
+            <div class="form-group">
+              <label class="form-label">PROJECT LOGO / IMAGE</label>
+              <div class="image-upload-card">
+                <div class="image-preview-box" [style.border-color]="color">
+                  @if (imageUrl) {
+                    <img [src]="imageUrl" alt="Project Image" class="project-img-preview" />
+                  } @else {
+                    <i class="fi fi-rr-picture text-muted"></i>
+                  }
+                </div>
+
+                <div class="upload-controls font-mono">
+                  <input
+                    type="file"
+                    #fileInput
+                    accept="image/*"
+                    (change)="onFileSelected($event)"
+                    style="display: none;"
+                  />
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-xs"
+                    (click)="fileInput.click()"
+                    [disabled]="uploadingImage"
+                    title="Upload project image to Supabase Storage"
+                  >
+                    @if (uploadingImage) {
+                      <i class="fi fi-rr-spinner spinner font-mono"></i> Uploading...
+                    } @else {
+                      <i class="fi fi-rr-cloud-upload text-cyan"></i> {{ imageUrl ? 'Change Image' : 'Upload Image' }}
+                    }
+                  </button>
+
+                  @if (imageUrl) {
+                    <button
+                      type="button"
+                      class="btn btn-ghost btn-xs text-rose"
+                      (click)="imageUrl = ''"
+                      [disabled]="uploadingImage"
+                      title="Remove image"
+                    >
+                      <i class="fi fi-rr-trash"></i> Remove
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+
             <!-- Color Accent Picker -->
             <div class="form-group">
               <label class="form-label">PROJECT COLOR ACCENT</label>
@@ -122,7 +184,7 @@ import { SelectComponent, SelectOption } from './select';
               <button type="button" class="btn btn-secondary btn-sm" (click)="close.emit()">
                 Cancel
               </button>
-              <button type="submit" class="btn btn-primary btn-sm" [disabled]="!name.trim()">
+              <button type="submit" class="btn btn-primary btn-sm">
                 <i class="fi fi-rr-check"></i>
                 <span>{{ isEditMode ? 'Save Changes' : 'Create Project' }}</span>
               </button>
@@ -260,6 +322,45 @@ import { SelectComponent, SelectOption } from './select';
       font-size: 0.7rem;
     }
 
+    .image-upload-card {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xs);
+      padding: 0.65rem;
+    }
+    .image-preview-box {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-xs);
+      border: 1.5px solid var(--border-medium);
+      background: var(--bg-surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .project-img-preview {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .upload-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .spinner {
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
     .modal-footer {
       display: flex;
       justify-content: space-between;
@@ -279,6 +380,32 @@ import { SelectComponent, SelectOption } from './select';
       display: flex;
       gap: 0.5rem;
     }
+    .form-error-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(244, 63, 94, 0.1);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      color: #f43f5e;
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--radius-xs);
+      font-size: 0.775rem;
+      font-weight: 600;
+    }
+    .input-error {
+      border-color: #f43f5e !important;
+      box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.2) !important;
+      background: rgba(244, 63, 94, 0.03) !important;
+    }
+    .field-error-text {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: #f43f5e;
+      font-size: 0.725rem;
+      font-weight: 600;
+      margin-top: 0.25rem;
+    }
   `]
 })
 export class ProjectModalComponent implements OnInit, AfterViewInit {
@@ -287,12 +414,16 @@ export class ProjectModalComponent implements OnInit, AfterViewInit {
 
   @ViewChild('nameInput') nameInput!: ElementRef<HTMLInputElement>;
 
+  submitted = false;
+
   name = '';
   repositoryUrl = '';
   description = '';
   status: 'active' | 'archived' | 'completed' = 'active';
   labelsInput = '';
   color = '#06b6d4';
+  imageUrl = '';
+  uploadingImage = false;
 
   projectStatusOptions: SelectOption[] = [
     { value: 'active', label: 'Active Workspace' },
@@ -306,6 +437,25 @@ export class ProjectModalComponent implements OnInit, AfterViewInit {
     return !!(this.projectToEdit && this.projectToEdit.id);
   }
 
+  async onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      this.uploadingImage = true;
+      try {
+        const uploadedUrl = await this.projectService.uploadProjectImage(file);
+        if (uploadedUrl) {
+          this.imageUrl = uploadedUrl;
+        }
+      } catch (e) {
+        console.error('Image upload failed:', e);
+      } finally {
+        this.uploadingImage = false;
+        input.value = '';
+      }
+    }
+  }
+
   constructor(private projectService: ProjectService) { }
 
   ngOnInit() {
@@ -316,6 +466,7 @@ export class ProjectModalComponent implements OnInit, AfterViewInit {
       this.status = this.projectToEdit.status || 'active';
       this.labelsInput = (this.projectToEdit.labels || []).join(', ');
       this.color = this.projectToEdit.color || '#06b6d4';
+      this.imageUrl = this.projectToEdit.image_url || this.projectToEdit.icon || '';
     }
   }
 
@@ -328,6 +479,7 @@ export class ProjectModalComponent implements OnInit, AfterViewInit {
   }
 
   async saveProject() {
+    this.submitted = true;
     if (!this.name.trim()) return;
 
     const parsedLabels = this.labelsInput
@@ -344,7 +496,8 @@ export class ProjectModalComponent implements OnInit, AfterViewInit {
         description: this.description,
         status: this.status,
         labels: parsedLabels,
-        color: this.color
+        color: this.color,
+        image_url: this.imageUrl
       });
       resultProject = updated || undefined;
     } else {
@@ -354,7 +507,8 @@ export class ProjectModalComponent implements OnInit, AfterViewInit {
         description: this.description,
         status: 'active',
         labels: parsedLabels,
-        color: this.color
+        color: this.color,
+        image_url: this.imageUrl
       });
       resultProject = created;
     }

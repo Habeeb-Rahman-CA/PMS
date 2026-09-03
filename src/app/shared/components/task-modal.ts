@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, AfterViewInit, ViewChild, ElementRef, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TaskService } from '../../core/services/task.service';
@@ -29,6 +29,13 @@ import { SelectComponent, SelectOption } from './select';
 
         <form (ngSubmit)="saveTask()" class="modal-form">
           <div class="form-body">
+            @if (submitted && (!title.trim() || !projectId)) {
+              <div class="form-error-banner font-mono">
+                <i class="fi fi-rr-triangle-warning"></i>
+                <span>Please complete all required fields below before saving.</span>
+              </div>
+            }
+
             <!-- Title -->
             <div class="form-group">
               <label class="form-label">SUMMARY / TITLE <span class="text-rose">*</span></label>
@@ -36,11 +43,17 @@ import { SelectComponent, SelectOption } from './select';
                 #titleInput
                 type="text"
                 class="form-input"
+                [class.input-error]="submitted && !title.trim()"
                 [(ngModel)]="title"
                 name="title"
                 placeholder="e.g. Implement JWT Auth interceptor or Fix CSS grid layout"
                 required
               />
+              @if (submitted && !title.trim()) {
+                <span class="field-error-text font-mono">
+                  <i class="fi fi-rr-exclamation"></i> Summary / Title is required
+                </span>
+              }
             </div>
 
             <!-- Type & Project Row -->
@@ -53,6 +66,11 @@ import { SelectComponent, SelectOption } from './select';
               <div class="form-group half">
                 <label class="form-label">PROJECT <span class="text-rose">*</span></label>
                 <app-select [options]="projectOptions" [(value)]="projectId" placeholder="Select project..."></app-select>
+                @if (submitted && !projectId) {
+                  <span class="field-error-text font-mono">
+                    <i class="fi fi-rr-exclamation"></i> Project selection is required
+                  </span>
+                }
               </div>
             </div>
 
@@ -113,14 +131,76 @@ import { SelectComponent, SelectOption } from './select';
 
             <!-- Description -->
             <div class="form-group">
-              <label class="form-label">DESCRIPTION / NOTES</label>
+              <div class="label-with-hint">
+                <label class="form-label">DESCRIPTION / NOTES</label>
+                <span class="desc-hint font-mono">Press Ctrl+Enter to save</span>
+              </div>
               <textarea
                 class="form-textarea"
                 rows="3"
                 [(ngModel)]="description"
                 name="description"
+                (keydown.control.enter)="saveTask(); $event.preventDefault()"
+                (keydown.meta.enter)="saveTask(); $event.preventDefault()"
                 placeholder="Acceptance criteria, technical notes, or reference URLs..."
               ></textarea>
+            </div>
+
+            <!-- Attachments Section (Image Only) -->
+            <div class="form-group">
+              <div class="label-with-hint">
+                <label class="form-label">ATTACHMENTS (IMAGE ONLY)</label>
+                @if (attachments().length > 0) {
+                  <span class="attachment-count font-mono">{{ attachments().length }} attached</span>
+                }
+              </div>
+
+              <div
+                class="attachment-dropzone"
+                [class.drag-over]="isDraggingOver()"
+                (dragover)="onDragOver($event)"
+                (dragleave)="onDragLeave($event)"
+                (drop)="onDrop($event)"
+                (click)="fileInput.click()"
+              >
+                <input
+                  #fileInput
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  (change)="onFileSelected($event)"
+                  style="display: none;"
+                />
+                <div class="dropzone-content">
+                  <i class="fi fi-rr-picture dropzone-icon"></i>
+                  <div class="dropzone-text">
+                    <span class="dropzone-title">Click to upload or drag & drop images</span>
+                    <span class="dropzone-sub">PNG, JPG, WEBP, GIF supported</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Thumbnails Grid -->
+              @if (attachments().length > 0) {
+                <div class="attachment-grid">
+                  @for (img of attachments(); track $index) {
+                    <div class="attachment-thumb-card" (click)="previewImage.set(img)">
+                      <img [src]="img" alt="Attachment" />
+                      <div class="thumb-overlay">
+                        <i class="fi fi-rr-eye zoom-icon"></i>
+                        <button
+                          type="button"
+                          class="thumb-remove-btn"
+                          (click)="$event.stopPropagation(); removeAttachment($index)"
+                          title="Remove image"
+                        >
+                          <i class="fi fi-rr-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
             </div>
           </div>
 
@@ -133,13 +213,30 @@ import { SelectComponent, SelectOption } from './select';
               <button type="button" class="btn btn-secondary btn-sm" (click)="close.emit()">
                 Cancel
               </button>
-              <button type="submit" class="btn btn-primary btn-sm" [disabled]="!title.trim() || !projectId">
+              <button type="submit" class="btn btn-primary btn-sm">
                 <i class="fi fi-rr-check"></i>
                 <span>{{ isEditMode ? 'Save Changes' : 'Create Task' }}</span>
               </button>
             </div>
           </div>
         </form>
+
+        <!-- Lightbox Image Preview Modal -->
+        @if (previewImage(); as fullImg) {
+          <div class="lightbox-overlay" (click)="previewImage.set(null)">
+            <div class="lightbox-card" (click)="$event.stopPropagation()">
+              <div class="lightbox-header">
+                <span class="font-mono text-muted">IMAGE PREVIEW</span>
+                <button class="btn btn-ghost btn-xs close-btn" (click)="previewImage.set(null)">
+                  <i class="fi fi-rr-cross"></i>
+                </button>
+              </div>
+              <div class="lightbox-body">
+                <img [src]="fullImg" alt="Full size preview" />
+              </div>
+            </div>
+          </div>
+        }
       </div>
     </div>
   `,
@@ -155,6 +252,7 @@ import { SelectComponent, SelectOption } from './select';
       border-radius: var(--radius-xs);
       box-shadow: var(--shadow-modal);
       overflow: hidden;
+      position: relative;
     }
 
     .modal-header {
@@ -218,6 +316,17 @@ import { SelectComponent, SelectOption } from './select';
       color: var(--text-muted);
       letter-spacing: 0.04em;
     }
+    .label-with-hint {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .desc-hint {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      opacity: 0.8;
+    }
 
     .form-input, .form-select, .form-textarea {
       background: var(--bg-surface-subtle);
@@ -233,6 +342,152 @@ import { SelectComponent, SelectOption } from './select';
       outline: none;
       border-color: var(--border-medium);
       background: var(--bg-surface);
+    }
+
+    /* Attachment Upload Styles */
+    .attachment-count {
+      font-size: 0.65rem;
+      color: var(--accent-cyan);
+      font-weight: 600;
+    }
+    .attachment-dropzone {
+      border: 1px dashed var(--border-medium);
+      border-radius: var(--radius-xs);
+      background: var(--bg-surface-subtle);
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      transition: var(--transition-fast);
+      text-align: center;
+    }
+    .attachment-dropzone:hover, .attachment-dropzone.drag-over {
+      border-color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.05);
+    }
+    .dropzone-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.65rem;
+    }
+    .dropzone-icon {
+      font-size: 1.25rem;
+      color: var(--accent-cyan);
+    }
+    .dropzone-text {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      text-align: left;
+    }
+    .dropzone-title {
+      font-size: 0.775rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .dropzone-sub {
+      font-size: 0.675rem;
+      color: var(--text-muted);
+    }
+    .attachment-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.35rem;
+    }
+    .attachment-thumb-card {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--border-medium);
+      overflow: hidden;
+      background: var(--bg-canvas);
+      cursor: pointer;
+    }
+    .attachment-thumb-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .thumb-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+      opacity: 0;
+      transition: var(--transition-fast);
+    }
+    .attachment-thumb-card:hover .thumb-overlay {
+      opacity: 1;
+    }
+    .zoom-icon {
+      color: #ffffff;
+      font-size: 0.85rem;
+    }
+    .thumb-remove-btn {
+      background: rgba(244, 63, 94, 0.85);
+      border: none;
+      color: #ffffff;
+      width: 22px;
+      height: 22px;
+      border-radius: var(--radius-xs);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: var(--transition-fast);
+    }
+    .thumb-remove-btn:hover {
+      background: #f43f5e;
+    }
+
+    /* Lightbox Modal */
+    .lightbox-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 1100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .lightbox-card {
+      max-width: 90vw;
+      max-height: 90vh;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-xs);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .lightbox-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0.85rem;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.75rem;
+    }
+    .lightbox-body {
+      padding: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: auto;
+      max-height: calc(90vh - 50px);
+    }
+    .lightbox-body img {
+      max-width: 100%;
+      max-height: 80vh;
+      object-fit: contain;
+      border-radius: var(--radius-xs);
     }
 
     .modal-footer {
@@ -254,6 +509,32 @@ import { SelectComponent, SelectOption } from './select';
       display: flex;
       gap: 0.5rem;
     }
+    .form-error-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(244, 63, 94, 0.1);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      color: #f43f5e;
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--radius-xs);
+      font-size: 0.775rem;
+      font-weight: 600;
+    }
+    .input-error {
+      border-color: #f43f5e !important;
+      box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.2) !important;
+      background: rgba(244, 63, 94, 0.03) !important;
+    }
+    .field-error-text {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: #f43f5e;
+      font-size: 0.725rem;
+      font-weight: 600;
+      margin-top: 0.25rem;
+    }
   `]
 })
 export class TaskModalComponent implements OnInit, AfterViewInit {
@@ -265,6 +546,7 @@ export class TaskModalComponent implements OnInit, AfterViewInit {
 
   @ViewChild('titleInput') titleInput!: ElementRef<HTMLInputElement>;
 
+  submitted = false;
   title = '';
   description = '';
   projectId = '';
@@ -275,11 +557,15 @@ export class TaskModalComponent implements OnInit, AfterViewInit {
   dueDate = '';
   labelsInput = '';
 
+  attachments = signal<string[]>([]);
+  previewImage = signal<string | null>(null);
+  isDraggingOver = signal<boolean>(false);
+
   typeOptions: SelectOption[] = [
-    { value: 'task', label: 'Task', icon: 'fi fi-rr-check-box' },
-    { value: 'bug', label: 'Bug', icon: 'fi fi-rr-bug' },
-    { value: 'story', label: 'Story', icon: 'fi fi-rr-bookmark' },
-    { value: 'epic', label: 'Epic', icon: 'fi fi-rr-bolt' }
+    { value: 'task', label: 'Task', icon: 'fi fi-rr-checkbox text-cyan' },
+    { value: 'story', label: 'Story', icon: 'fi fi-rr-book-alt text-cyan' },
+    { value: 'bug', label: 'Bug', icon: 'fi fi-rr-bug text-rose' },
+    { value: 'epic', label: 'Epic', icon: 'fi fi-rr-rocket text-amber' }
   ];
 
   priorityOptions: SelectOption[] = [
@@ -326,8 +612,16 @@ export class TaskModalComponent implements OnInit, AfterViewInit {
       this.assignee = this.taskToEdit.assignee || 'Self';
       this.dueDate = this.taskToEdit.due_date || '';
       this.labelsInput = (this.taskToEdit.labels || []).join(', ');
+      if (this.taskToEdit.attachments && Array.isArray(this.taskToEdit.attachments)) {
+        this.attachments.set([...this.taskToEdit.attachments]);
+      }
     } else {
-      if (this.defaultProjectId) this.projectId = this.defaultProjectId;
+      if (this.defaultProjectId && this.defaultProjectId !== 'ALL') {
+        this.projectId = this.defaultProjectId;
+      } else {
+        const active = this.projectService.activeProject() || this.projectService.projects()[0];
+        if (active) this.projectId = active.id;
+      }
       if (this.defaultStatus) this.status = this.defaultStatus;
       if (this.defaultDueDate) this.dueDate = this.defaultDueDate;
     }
@@ -345,7 +639,57 @@ export class TaskModalComponent implements OnInit, AfterViewInit {
     return this.workflowService.getWorkflowsForProject(this.projectId);
   }
 
+  onFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.processFiles(Array.from(input.files));
+    }
+    input.value = '';
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingOver.set(true);
+  }
+
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingOver.set(false);
+  }
+
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.isDraggingOver.set(false);
+    if (event.dataTransfer?.files && event.dataTransfer.files.length > 0) {
+      this.processFiles(Array.from(event.dataTransfer.files));
+    }
+  }
+
+  processFiles(files: File[]) {
+    const imageFiles = files.filter(f => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) return;
+
+    for (const file of imageFiles) {
+      const reader = new FileReader();
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        const result = e.target?.result as string;
+        if (result) {
+          this.attachments.update(curr => [...curr, result]);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  removeAttachment(index: number) {
+    this.attachments.update(curr => curr.filter((_, i) => i !== index));
+  }
+
   async saveTask() {
+    this.submitted = true;
     if (!this.title.trim() || !this.projectId) return;
 
     const parsedLabels = this.labelsInput
@@ -372,7 +716,8 @@ export class TaskModalComponent implements OnInit, AfterViewInit {
         priority: this.priority,
         assignee: this.assignee,
         due_date: this.dueDate,
-        labels: parsedLabels
+        labels: parsedLabels,
+        attachments: this.attachments()
       });
       resTask = updated || undefined;
     } else {
@@ -386,7 +731,8 @@ export class TaskModalComponent implements OnInit, AfterViewInit {
         priority: this.priority,
         assignee: this.assignee,
         due_date: this.dueDate,
-        labels: parsedLabels
+        labels: parsedLabels,
+        attachments: this.attachments()
       });
       resTask = created;
     }
@@ -394,3 +740,4 @@ export class TaskModalComponent implements OnInit, AfterViewInit {
     this.close.emit(resTask);
   }
 }
+

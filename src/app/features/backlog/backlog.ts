@@ -150,6 +150,7 @@ import { SelectComponent, SelectOption } from '../../shared/components/select';
           <div class="cell-priority">PRIORITY</div>
           <div class="cell-status">STATUS</div>
           <div class="cell-due">DUE DATE</div>
+          <div class="cell-created">CREATED DATE</div>
           <div class="cell-actions">ACTIONS</div>
         </div>
 
@@ -232,10 +233,21 @@ import { SelectComponent, SelectOption } from '../../shared/components/select';
                   }
                 </div>
 
+                <!-- Created Date -->
+                <div class="cell-created font-mono">
+                  @if (t.created_at) {
+                    <span class="created-pill" [title]="t.created_at">
+                      <i class="fi fi-rr-clock"></i> {{ formatCreatedDate(t.created_at) }}
+                    </span>
+                  } @else {
+                    <span class="no-created">-</span>
+                  }
+                </div>
+
                 <!-- Actions -->
                 <div class="cell-actions" (click)="$event.stopPropagation()">
-                  <button class="action-btn" (click)="deleteTask(t.id)" title="Delete task">
-                    <i class="fi fi-rr-trash text-rose"></i>
+                  <button class="action-btn btn-danger-action" (click)="deleteTask(t.id)" title="Delete task permanently">
+                    <i class="fi fi-rr-trash"></i>
                   </button>
                 </div>
               </div>
@@ -547,6 +559,18 @@ import { SelectComponent, SelectOption } from '../../shared/components/select';
     }
     .no-due { color: var(--text-subtle); }
 
+    .cell-created {
+      width: 110px;
+      font-size: 0.725rem;
+    }
+    .created-pill {
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    .no-created { color: var(--text-subtle); }
+
     .cell-actions {
       width: 50px;
       display: flex;
@@ -566,6 +590,19 @@ import { SelectComponent, SelectOption } from '../../shared/components/select';
       opacity: 1;
       background: var(--bg-surface-subtle);
     }
+    .action-btn.btn-danger-action {
+      color: #f43f5e;
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      background: rgba(244, 63, 94, 0.06);
+      opacity: 0.85;
+      transition: var(--transition-fast);
+    }
+    .action-btn.btn-danger-action:hover {
+      opacity: 1;
+      background: #f43f5e;
+      color: #ffffff;
+      border-color: #f43f5e;
+    }
   `]
 })
 export class BacklogComponent implements OnInit {
@@ -574,7 +611,7 @@ export class BacklogComponent implements OnInit {
   selectedType = signal<string>('ALL');
   selectedPriority = signal<string>('ALL');
   selectedStatus = signal<string>('ALL');
-  sortBy = signal<string>('priority');
+  sortBy = signal<string>('created_at');
 
   projectFilterOptions = computed<SelectOption[]>(() => [
     { value: 'ALL', label: 'All Projects', icon: 'fi fi-rr-apps' },
@@ -587,10 +624,10 @@ export class BacklogComponent implements OnInit {
 
   typeFilterOptions: SelectOption[] = [
     { value: 'ALL', label: 'All Types' },
+    { value: 'task', label: 'Task', icon: 'fi fi-rr-checkbox' },
     { value: 'story', label: 'Story', icon: 'fi fi-rr-book-alt' },
     { value: 'bug', label: 'Bug', icon: 'fi fi-rr-bug' },
-    { value: 'task', label: 'Task', icon: 'fi fi-rr-check-circle' },
-    { value: 'epic', label: 'Epic', icon: 'fi fi-rr-rocket-takeoff' }
+    { value: 'epic', label: 'Epic', icon: 'fi fi-rr-rocket' }
   ];
 
   priorityFilterOptions: SelectOption[] = [
@@ -610,10 +647,10 @@ export class BacklogComponent implements OnInit {
   ]);
 
   sortOptions: SelectOption[] = [
+    { value: 'created_at', label: 'Created Date' },
     { value: 'priority', label: 'Priority' },
     { value: 'due_date', label: 'Due Date' },
-    { value: 'title', label: 'Title' },
-    { value: 'created_at', label: 'Created Date' }
+    { value: 'title', label: 'Title' }
   ];
 
   rowStatusOptions = computed<SelectOption[]>(() =>
@@ -692,7 +729,11 @@ export class BacklogComponent implements OnInit {
     // Sort logic
     const priorityWeight: Record<string, number> = { urgent: 4, high: 3, medium: 2, low: 1 };
     list.sort((a, b) => {
-      if (sort === 'priority') {
+      if (sort === 'created_at') {
+        const da = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const db = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return db - da;
+      } else if (sort === 'priority') {
         const pa = priorityWeight[(a.priority || 'medium').toLowerCase()] || 0;
         const pb = priorityWeight[(b.priority || 'medium').toLowerCase()] || 0;
         return pb - pa;
@@ -702,8 +743,6 @@ export class BacklogComponent implements OnInit {
         return a.due_date.localeCompare(b.due_date);
       } else if (sort === 'title') {
         return a.title.localeCompare(b.title);
-      } else if (sort === 'created_at') {
-        return (b.created_at || '').localeCompare(a.created_at || '');
       }
       return 0;
     });
@@ -717,7 +756,7 @@ export class BacklogComponent implements OnInit {
     this.selectedType.set('ALL');
     this.selectedPriority.set('ALL');
     this.selectedStatus.set('ALL');
-    this.sortBy.set('priority');
+    this.sortBy.set('created_at');
   }
 
   isAllSelected(): boolean {
@@ -800,7 +839,7 @@ export class BacklogComponent implements OnInit {
     switch (t) {
       case 'story': return 'fi fi-rr-book-alt';
       case 'bug': return 'fi fi-rr-bug';
-      case 'epic': return 'fi fi-rr-rocket-takeoff';
+      case 'epic': return 'fi fi-rr-rocket';
       default: return 'fi fi-rr-check-circle';
     }
   }
@@ -840,5 +879,16 @@ export class BacklogComponent implements OnInit {
     if (!t.due_date || t.completed || this.isDone(t.status)) return false;
     const today = new Date().toISOString().split('T')[0];
     return t.due_date < today;
+  }
+
+  formatCreatedDate(isoString?: string): string {
+    if (!isoString) return '-';
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return isoString;
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
   }
 }

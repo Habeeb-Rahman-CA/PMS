@@ -281,6 +281,8 @@ pre,
   padding: 0.4rem 0.65rem;
   outline: none;
   transition: var(--transition-fast);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .form-input:focus,

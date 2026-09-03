@@ -73,7 +73,14 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
             <!-- Card Header -->
             <div class="card-header">
               <div class="title-group">
-                <span class="status-dot" [style.background-color]="p.color || 'var(--accent-cyan)'"></span>
+                @let projImg = p.image_url || p.icon;
+                @if (isImageIcon(projImg)) {
+                  <img [src]="projImg" class="project-icon-avatar" alt="Project Image" />
+                } @else if (projImg) {
+                  <i [class]="projImg" class="project-icon-symbol" [style.color]="p.color || 'var(--accent-cyan)'"></i>
+                } @else {
+                  <span class="status-dot" [style.background-color]="p.color || 'var(--accent-cyan)'"></span>
+                }
                 <h3 class="project-title">{{ p.name }}</h3>
               </div>
 
@@ -293,9 +300,22 @@ import { WorkflowModalComponent } from '../../shared/components/workflow-modal';
     .title-group {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.55rem;
       flex: 1;
       overflow: hidden;
+    }
+    .project-icon-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-xs);
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 1px solid var(--border-subtle);
+    }
+    .project-icon-symbol {
+      font-size: 1.1rem;
+      line-height: 1;
+      flex-shrink: 0;
     }
     .project-title {
       font-size: 1rem;
@@ -497,6 +517,11 @@ export class ProjectsComponent {
     public workflowService: WorkflowService,
     public workspaceService: WorkspaceService
   ) { }
+
+  isImageIcon(val?: string): boolean {
+    if (!val) return false;
+    return val.startsWith('data:') || val.startsWith('http://') || val.startsWith('https://');
+  }
 
   filteredProjects = computed(() => {
     const q = this.searchQuery().toLowerCase().trim();

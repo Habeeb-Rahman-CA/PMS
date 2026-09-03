@@ -12,7 +12,9 @@ export interface PendingSyncOp {
   | 'DELETE_PROJECT'
   | 'ADD_COMMENT'
   | 'UPDATE_COMMENT'
-  | 'DELETE_COMMENT';
+  | 'DELETE_COMMENT'
+  | 'ADD_STATUS_HISTORY'
+  | 'ADD_PROJECT_ACTIVITY';
   payload: any;
   timestamp: string;
 }
@@ -81,29 +83,48 @@ export class SyncService {
 
   async processQueue() {
     if (this.syncing() || !this.isOnline()) return;
-
-    const queue = [...this.pendingSyncQueue()];
-    if (queue.length === 0) return;
+    if (this.pendingSyncQueue().length === 0) return;
 
     this.syncing.set(true);
 
-    const remainingOps: PendingSyncOp[] = [];
+    try {
+      while (this.pendingSyncQueue().length > 0 && this.isOnline()) {
+        const queue = this.pendingSyncQueue();
+        const op = queue[0];
 
-    for (const op of queue) {
-      try {
         const success = await this.executeOp(op);
-        if (!success) {
-          remainingOps.push(op);
+        if (success) {
+          this.pendingSyncQueue.update(q => q.slice(1));
+          this.saveQueueToStorage();
+        } else {
+          console.warn(`[bilo Sync] Operation ${op.type} failed. Pausing sync queue to preserve order.`);
+          break;
         }
-      } catch (e) {
-        console.warn(`[bilo Sync] Operation ${op.type} failed, retaining in queue:`, e);
-        remainingOps.push(op);
       }
+    } catch (e) {
+      console.error('[bilo Sync] Unexpected error processing sync queue:', e);
+    } finally {
+      this.syncing.set(false);
     }
+  }
 
-    this.pendingSyncQueue.set(remainingOps);
-    this.saveQueueToStorage();
-    this.syncing.set(false);
+  isValidUuid(val?: string): boolean {
+    if (!val) return false;
+    return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
+  }
+
+  private sanitizeTaskPayload(payload: any): any {
+    const clean = { ...payload };
+    if (clean.workflow_id && !this.isValidUuid(clean.workflow_id)) {
+      clean.workflow_id = null;
+    }
+    if (clean.project_id && !this.isValidUuid(clean.project_id)) {
+      clean.project_id = null;
+    }
+    if (!clean.due_date || (typeof clean.due_date === 'string' && clean.due_date.trim() === '')) {
+      clean.due_date = null;
+    }
+    return clean;
   }
 
   private async executeOp(op: PendingSyncOp): Promise<boolean> {
@@ -112,12 +133,24 @@ export class SyncService {
 
     switch (type) {
       case 'CREATE_TASK': {
-        const { error } = await sb.from('tasks').upsert([payload]);
+        const cleanPayload = this.sanitizeTaskPayload(payload);
+        let { error } = await sb.from('tasks').upsert([cleanPayload]);
+        if (error && error.code === 'PGRST204') {
+          delete cleanPayload.attachments;
+          const retry = await sb.from('tasks').upsert([cleanPayload]);
+          return !retry.error;
+        }
         return !error;
       }
       case 'UPDATE_TASK': {
-        const { id, ...updates } = payload;
-        const { error } = await sb.from('tasks').update(updates).eq('id', id);
+        const { id, ...updates } = this.sanitizeTaskPayload(payload);
+        const cleanUpdates = { ...updates };
+        let { error } = await sb.from('tasks').update(cleanUpdates).eq('id', id);
+        if (error && error.code === 'PGRST204') {
+          delete cleanUpdates.attachments;
+          const retry = await sb.from('tasks').update(cleanUpdates).eq('id', id);
+          return !retry.error;
+        }
         return !error;
       }
       case 'DELETE_TASK': {
@@ -125,12 +158,26 @@ export class SyncService {
         return !error;
       }
       case 'CREATE_PROJECT': {
-        const { error } = await sb.from('projects').upsert([payload]);
+        const cleanPayload = { ...payload };
+        let { error } = await sb.from('projects').upsert([cleanPayload]);
+        if (error && error.code === 'PGRST204') {
+          delete cleanPayload.image_url;
+          delete cleanPayload.icon;
+          const retry = await sb.from('projects').upsert([cleanPayload]);
+          return !retry.error;
+        }
         return !error;
       }
       case 'UPDATE_PROJECT': {
         const { id, ...updates } = payload;
-        const { error } = await sb.from('projects').update(updates).eq('id', id);
+        const cleanUpdates = { ...updates };
+        let { error } = await sb.from('projects').update(cleanUpdates).eq('id', id);
+        if (error && error.code === 'PGRST204') {
+          delete cleanUpdates.image_url;
+          delete cleanUpdates.icon;
+          const retry = await sb.from('projects').update(cleanUpdates).eq('id', id);
+          return !retry.error;
+        }
         return !error;
       }
       case 'DELETE_PROJECT': {
@@ -138,7 +185,15 @@ export class SyncService {
         return !error;
       }
       case 'ADD_COMMENT': {
-        const { error } = await sb.from('task_comments').upsert([payload]);
+        const cleanPayload = { ...payload };
+        if (!cleanPayload.task_id || !this.isValidUuid(cleanPayload.task_id)) {
+          return true;
+        }
+        const { error } = await sb.from('task_comments').upsert([cleanPayload]);
+        if (error && error.code === '23503') {
+          console.warn('[bilo Sync] task_comments FK missing, resolved gracefully:', cleanPayload);
+          return true;
+        }
         return !error;
       }
       case 'UPDATE_COMMENT': {
@@ -148,6 +203,22 @@ export class SyncService {
       }
       case 'DELETE_COMMENT': {
         const { error } = await sb.from('task_comments').delete().eq('id', payload.id);
+        return !error;
+      }
+      case 'ADD_STATUS_HISTORY': {
+        const cleanPayload = { ...payload };
+        if (!cleanPayload.task_id || !this.isValidUuid(cleanPayload.task_id)) {
+          return true;
+        }
+        const { error } = await sb.from('task_status_history').upsert([cleanPayload]);
+        if (error && error.code === '23503') {
+          console.warn('[bilo Sync] task_status_history FK missing, resolved gracefully:', cleanPayload);
+          return true;
+        }
+        return !error;
+      }
+      case 'ADD_PROJECT_ACTIVITY': {
+        const { error } = await sb.from('project_activities').upsert([payload]);
         return !error;
       }
       default:

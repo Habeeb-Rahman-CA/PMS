@@ -21,10 +21,15 @@
 
     <!-- Right End: Offline Badge & Help Icon -->
     <div class="header-right font-mono">
+      @if (canInstallPwa()) {
+        <button class="btn btn-primary btn-xs" (click)="installPwa()" title="Install Bilo Desktop Standalone App">
+          <i class="fi fi-rr-download"></i> Install App
+        </button>
+      }
       @if (!syncService.isOnline()) {
-      <span class="badge-mono badge-amber" title="Offline Mode - Changes saved locally">
-        <i class="fi fi-rr-wifi-slash"></i> OFFLINE ({{ syncService.pendingSyncQueue().length }})
-      </span>
+        <span class="badge-mono badge-amber" title="Offline Mode - Changes saved locally">
+          <i class="fi fi-rr-wifi-slash"></i> OFFLINE ({{ syncService.pendingSyncQueue().length }})
+        </span>
       }
       <button class="btn btn-ghost btn-sm help-btn" (click)="workspaceService.toggleShortcutsModal()"
         title="Help & Reference (?)">
