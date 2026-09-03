@@ -14,7 +14,9 @@ import { ShortcutsModalComponent } from './shared/components/shortcuts-modal';
 import { TaskModalComponent } from './shared/components/task-modal';
 
 import { TaskShareService } from './core/services/task-share.service';
+import { PushNotificationService } from './core/services/push-notification.service';
 import { TaskDetailModalComponent } from './shared/components/task-detail-modal';
+import { PushNotificationModalComponent } from './shared/components/push-notification-modal';
 import { BiloLogoComponent } from './shared/components/bilo-logo';
 import { Task } from './core/models/project.model';
 
@@ -33,16 +35,18 @@ import { Task } from './core/models/project.model';
     CommandPaletteComponent,
     ShortcutsModalComponent,
     TaskModalComponent,
-    TaskDetailModalComponent
+    TaskDetailModalComponent,
+    PushNotificationModalComponent
   ],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
 export class App {
-  readonly appVersion = 'v1.1.0';
+  readonly appVersion = 'v1.1.1';
   sidebarCollapsed = signal<boolean>(false);
   mobileMenuOpen = signal<boolean>(false);
   editingSharedTask = signal<Task | null>(null);
+  pushNotificationModalOpen = signal<boolean>(false);
 
   deferredPrompt: any = null;
   canInstallPwa = signal<boolean>(false);
@@ -69,8 +73,13 @@ export class App {
     public workspaceService: WorkspaceService,
     public syncService: SyncService,
     public updateService: UpdateService,
-    public taskShareService: TaskShareService
+    public taskShareService: TaskShareService,
+    public pushService: PushNotificationService
   ) {}
+
+  togglePushNotificationModal() {
+    this.pushNotificationModalOpen.update(v => !v);
+  }
 
   toggleSidebar() {
     this.sidebarCollapsed.update(v => !v);

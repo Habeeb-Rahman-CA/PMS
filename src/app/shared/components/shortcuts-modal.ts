@@ -219,6 +219,21 @@ import { WorkspaceService } from '../../core/services/workspace.service';
                     <span class="badge-mono">Quick Actions</span>
                   </div>
                 </div>
+
+                <div class="feature-card">
+                  <div class="card-title">
+                    <i class="fi fi-rr-bell-ring text-rose"></i>
+                    <span>Web Push Notifications</span>
+                  </div>
+                  <p class="card-desc">
+                    Real-time PWA desktop alerts for task creation, completion, and due date reminders. Access via the top navigation bell icon.
+                  </p>
+                  <div class="card-tags">
+                    <span class="badge-mono">Web Push API</span>
+                    <span class="badge-mono">Due Reminders</span>
+                    <span class="badge-mono">Task Alerts</span>
+                  </div>
+                </div>
               </div>
             </div>
           }

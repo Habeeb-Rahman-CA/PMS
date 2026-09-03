@@ -31,6 +31,13 @@
           <i class="fi fi-rr-wifi-slash"></i> OFFLINE ({{ syncService.pendingSyncQueue().length }})
         </span>
       }
+      <button class="btn btn-ghost btn-sm nav-bell-btn" (click)="togglePushNotificationModal()"
+        [title]="pushService.notificationsEnabled() ? 'Push Notifications Active' : 'Push Notifications Center'">
+        <i class="fi fi-rr-bell-ring help-icon" [class.text-amber]="pushService.notificationsEnabled()"></i>
+        @if (pushService.notificationsEnabled()) {
+          <span class="bell-active-dot"></span>
+        }
+      </button>
       <button class="btn btn-ghost btn-sm help-btn" (click)="workspaceService.toggleShortcutsModal()"
         title="Help & Reference (?)">
         <i class="fi fi-rr-interrogation help-icon"></i>
@@ -176,11 +183,22 @@
   <app-task-modal [taskToEdit]="editingSharedTask()" (close)="closeEditSharedModal()" />
   }
 
-  <!-- Toast Notification for Copy Share Link -->
+  @if (pushNotificationModalOpen()) {
+  <app-push-notification-modal (close)="pushNotificationModalOpen.set(false)" />
+  }
+
+  <!-- Toast Notification for Copy Share Link & Push Service -->
   @if (taskShareService.toastMessage(); as msg) {
   <div class="task-share-toast paper-panel font-mono">
     <i class="fi fi-rr-check-circle text-emerald"></i>
     <span>{{ msg }}</span>
+  </div>
+  }
+
+  @if (pushService.toastMessage(); as pushMsg) {
+  <div class="task-share-toast paper-panel font-mono">
+    <i class="fi fi-rr-bell text-amber"></i>
+    <span>{{ pushMsg }}</span>
   </div>
   }
 </div>

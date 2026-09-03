@@ -3,7 +3,7 @@
    Provides App Shell Cache & Network-First / Stale-While-Revalidate Caching
    ========================================================================== */
 
-const CACHE_NAME = 'bilo-pwa-v1.1.0';
+const CACHE_NAME = 'bilo-pwa-v1.1.1';
 
 const STATIC_ASSETS = [
   '/',
@@ -112,3 +112,65 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+/* ==========================================================================
+   Push Notifications & Notification Interactions
+   ========================================================================== */
+
+// Push Event Listener: Receives Web Push Payloads & Renders Native Notification
+self.addEventListener('push', (event) => {
+  let data = {
+    title: 'bilo Task Manager',
+    body: 'You have a new update in your workspace.',
+    icon: '/bilo-icon-dark.png',
+    badge: '/bilo-icon-dark.png',
+    data: { url: '/' }
+  };
+
+  if (event.data) {
+    try {
+      data = { ...data, ...event.data.json() };
+    } catch (e) {
+      data.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: data.icon || '/bilo-icon-dark.png',
+    badge: data.badge || '/bilo-icon-dark.png',
+    vibrate: [100, 50, 100],
+    data: data.data || { url: '/' },
+    actions: data.actions || [
+      { action: 'open', title: 'Open Workspace' },
+      { action: 'dismiss', title: 'Dismiss' }
+    ]
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+// Notification Click Listener: Focuses Window or Opens URL
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  if (event.action === 'dismiss') return;
+
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+

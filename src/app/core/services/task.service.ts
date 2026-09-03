@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { SupabaseService } from './supabase.service';
 import { SyncService } from './sync.service';
 import { ProjectService } from './project.service';
+import { PushNotificationService } from './push-notification.service';
 import { Task, TaskComment, TaskStatusHistory } from '../models/project.model';
 
 @Injectable({
@@ -16,7 +17,8 @@ export class TaskService {
   constructor(
     private supabaseService: SupabaseService,
     private syncService: SyncService,
-    private projectService: ProjectService
+    private projectService: ProjectService,
+    private pushNotificationService: PushNotificationService
   ) {
     this.loadFromStorage();
     this.loadTasksFromSupabase();
@@ -207,6 +209,7 @@ export class TaskService {
     this.recordStatusHistory(historyEntry);
 
     this.projectService.logActivity(newTask.project_id, 'Task Created', `Created task "${newTask.title}"`);
+    this.pushNotificationService.notifyTaskCreated(newTask.title);
     return newTask;
   }
 
@@ -240,6 +243,8 @@ export class TaskService {
         };
         this.recordStatusHistory(historyEntry);
         this.projectService.logActivity(taskObj.project_id, 'Status Updated', `Task "${taskObj.title}" moved to ${updates.status}`);
+        
+        this.pushNotificationService.notifyTaskStatusChanged(taskObj.title, existingTask.status, updates.status);
       } else {
         this.saveToStorage();
         this.projectService.logActivity(taskObj.project_id, 'Task Updated', `Updated task "${taskObj.title}"`);
